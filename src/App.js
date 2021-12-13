@@ -29,7 +29,7 @@ function App() {
   const [phenotype, setPhenotype] = useState('');
   const [grayedOut, setGrayedOut] = useState([]);
   const [renderers, setRenderers] = useState([]);
-  // const [rotationIntervals, setRotationIntervals] = useState([]);
+  const [rotationIntervals, setRotationIntervals] = useState([]);
 
   const setPhenotypeWrapper = (x) => {
     setPhenotype(x);
@@ -98,15 +98,17 @@ function App() {
         render();
       });
 
-      // // rotate the camera
-      // setRotationIntervals(rotationIntervals => [...rotationIntervals, setInterval(() => {
-      //   // rotate around focal point
-      //   let cam = renderer.getActiveCamera();
-      //   cam.roll(0.02);
-      //   // cam.yaw(0.1);
-      //   // cam.pitch(0.1);
-      //   render();
-      // }, 200)]);
+      // rotate each actor around camera
+      const roll = () => {
+        // iterate through all actors
+        const actors = renderer.getActors();
+        actors.forEach((actor) => {
+          actor.setOrientation(0, actor.getOrientation()[1] + 0.01, 0);
+        });
+        render();
+        requestAnimationFrame(roll);
+      }
+      // setRotationIntervals(rotationIntervals => [...rotationIntervals, requestAnimationFrame(roll)]);
 
     }
 
@@ -155,21 +157,24 @@ function App() {
     for (const k in vtkContainerRefs) {
       if (Object.hasOwnProperty.call(vtkContainerRefs, k)) {
         const vtkContainerRef = vtkContainerRefs[k];
-        if (k <= 128) {
-          renderAtlas(vtkContainerRef, k);
-        } else {
+        // if (k <= 128) {
+        // if (k <= 32) {
+          // renderAtlas(vtkContainerRef, k);
+        // } else {
           vtkContainerRef.current.innerHTML = `
           <svg class="animate-spin h-20 w-20 my-20 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style="margin:0 auto">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>`;
           vtkContainerRef.current.style = "min-height: 300px;padding-top: 50px;";
-          setTimeout(() => {
+          // setTimeout(() => {
+          requestAnimationFrame(() => {
             vtkContainerRef.current.innerHTML = '';
             vtkContainerRef.current.style = "";
             renderAtlas(vtkContainerRef, k);
-          }, k * 25);
-        }
+            // }, k * 25);
+          });
+        // }
       }
     }
   }, []);
@@ -296,21 +301,21 @@ function App() {
           <div className="form-control my-2">
             <div className="relative">
               <button className="absolute top-0 left-0 rounded-r-none btn btn-primary hidden" ref={backButtonRef} onClick={(e) => {
-                  for (let i = 0; i < grayedOut.length; i++) {
-                    const disabled = grayedOut[i];
-                    disabled.getProperty().setOpacity(1);
-                    disabled.getProperty().setColor(Math.floor(Math.random() * 255) / 255, Math.floor(Math.random() * 255) / 255, Math.floor(Math.random() * 255) / 255);
-                  }
-                  for (let i = 0; i < renderers.length; i++) {
-                    const render = renderers[i];
-                    render();
-                  }
-                  animateOut(vtkContainerRefs);
-                  setSearchResults([]);
-                  setPhenotypeWrapper('');
-                  setAtlas('');
-                  e.target.parentNode.children[1].classList.remove('pl-24');
-                }}>&larr; Back</button>
+                for (let i = 0; i < grayedOut.length; i++) {
+                  const disabled = grayedOut[i];
+                  disabled.getProperty().setOpacity(1);
+                  disabled.getProperty().setColor(Math.floor(Math.random() * 255) / 255, Math.floor(Math.random() * 255) / 255, Math.floor(Math.random() * 255) / 255);
+                }
+                for (let i = 0; i < renderers.length; i++) {
+                  const render = renderers[i];
+                  render();
+                }
+                animateOut(vtkContainerRefs);
+                setSearchResults([]);
+                setPhenotypeWrapper('');
+                setAtlas('');
+                e.target.parentNode.children[1].classList.remove('pl-24');
+              }}>&larr; Back</button>
               <input type="text" placeholder="Search for a variant, gene, or phenotype" className="input input-bordered input-primary w-full" onChange={x => updateMenu(x.target.value)} />
             </div>
           </div>
@@ -346,7 +351,7 @@ function App() {
         {/* <div ref={vtkContainerRef} className={phenotype.length > 0 ? "col-span-6 w-full max-w-screen-lg" : "col-span-12 w-full max-w-screen-lg"} style={{margin: "0 auto"}} /> */}
         {Object.keys(vtkContainerRefs).map((k => {
           return (
-            <div className="col-span-4">
+            <div className="col-span-2">
               <div ref={vtkContainerRefs[k]} className="w-full" />
               <button className="btn btn-primary w-full" onClick={(e) => animateIn(vtkContainerRefs, k, e.target, true)}>Explore C{k}</button>
             </div>
