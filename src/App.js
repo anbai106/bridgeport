@@ -122,7 +122,10 @@ function App() {
         renderer.getActiveCamera().zoom(1.5);
         let orientation = actor.getOrientation()
         actor.setOrientation(orientation[0] + 20, orientation[1] + 25, 0);
-        render();
+        // eslint-disable-next-line
+        if (i == k) {
+          render();
+        }
       });
 
       // rotate each actor around camera
@@ -206,7 +209,7 @@ function App() {
               vtkContainerRef.current.style = "";
               renderAtlas(vtkContainerRef, k);
             });
-          }, k * 5);
+          }, k);
         }
       }
     }
