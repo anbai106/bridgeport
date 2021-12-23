@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { matchSorter } from 'match-sorter'
+import md5 from 'md5';
 // import vtkFullScreenRenderWindow from '@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow';
 import '@kitware/vtk.js/Rendering/Profiles/Geometry';
 import vtkGenericRenderWindow from '@kitware/vtk.js/Rendering/Misc/GenericRenderWindow';
@@ -13,6 +14,7 @@ import vtkCellPicker from '@kitware/vtk.js/Rendering/Core/CellPicker';
 // import vtkCamera from '@kitware/vtk.js/Rendering/Core/Camera';
 import 'animate.css';
 import GWAS from './data/GWAS.json';
+// organize data for later
 const GWASByIDP = GWAS.reduce((acc, curr) => {
   if (!(curr.IDP in acc)) {
     acc[curr.IDP] = [];
@@ -29,10 +31,11 @@ const GWASByAtlas = GWAS.reduce((acc, curr) => {
   return acc;
 }, {});
 
+
 function App() {
-  // const vtkContainerRef = useRef(null);
+  const vtkContainerRef = useRef(null);
   const backButtonRef = useRef(null);
-  const vtkContainerRefs = {
+  const vtkPreviews = {
     32: useRef(null),
     64: useRef(null),
     128: useRef(null),
@@ -40,6 +43,7 @@ function App() {
     512: useRef(null),
     1024: useRef(null),
   };
+  const [previewRotation, setPreviewRotation] = useState(0);
   const [allActors, setAllActors] = useState({
     32: {},
     64: {},
@@ -48,18 +52,14 @@ function App() {
     512: {},
     1024: {},
   });
+  const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [atlas, setAtlas] = useState(0);
   const [phenotype, setPhenotype] = useState('');
   const [grayedOut, setGrayedOut] = useState([]);
-  const [renderWindows, setRendererWindows] = useState([]);
-  // const [rotationIntervals, setRotationIntervals] = useState([]);
 
-  const renderAtlas = (vtkContainerRef, k) => {
-    // vtkContainerRef.current.innerHTML = '';
-    if (vtkContainerRef.current.innerHTML !== '') {
-      return;
-    }
+  const renderAtlas = (c) => {
+    vtkContainerRef.current.innerHTML = '<progress class="progress progress-primary" value="0" max="100"></progress>';
 
     // ----------------------------------------------------------------------------
     // Standard rendering code setup
@@ -69,7 +69,6 @@ function App() {
     //   rootContainer: vtkContainerRef.current,
     // });
     const genericRenderer = vtkGenericRenderWindow.newInstance();
-    genericRenderer.setContainer(vtkContainerRef.current);
 
     const renderer = genericRenderer.getRenderer();
     const renderWindow = genericRenderer.getRenderWindow();
@@ -77,17 +76,13 @@ function App() {
 
     const resetCamera = renderer.resetCamera;
     const render = renderWindow.render;
-
-    setRendererWindows((renderWindows) => [...renderWindows, renderWindow]);
-
-    // ----------------------------------------------------------------------------
-    // Example code
-    // ----------------------------------------------------------------------------
+    window.render = render;
 
     const reader = vtkPolyDataReader.newInstance();
-    for (let i = 1; i <= k; i++) {
+    const max_hash = 0xffffffffffffffffffffffffffffffff;
+    for (let i = 1; i <= c; i++) {
 
-      reader.setUrl(`/data/MINA/C${k}/C${k}_C${i}.vtk`).then(() => {
+      reader.setUrl(`/data/MINA/C${c}/C${c}_C${i}.vtk`).then(() => {
         const polydata = reader.getOutputData();
         if (polydata === undefined) { // sometimes the browser will fail to load (as we're requesting files very quickly)
           return;
@@ -98,47 +93,38 @@ function App() {
         actor.setMapper(mapper);
         mapper.setInputData(polydata);
 
-        // const texture = vtkTexture.newInstance();
-        // texture.setInterpolate(true);
-        // texture.setRepeat(true);
-        // texture.setInputData(polydata);
-        // actor.addTexture(texture);
-        // actor.getProperty().setOpacity(0.2);
         // actor.getProperty().setEdgeVisibility(true);
         // actor.getProperty().setLineWidth(2);
-        actor.getProperty().setColor(Math.floor(Math.random() * 255) / 255, Math.floor(Math.random() * 255) / 255, Math.floor(Math.random() * 255) / 255);
         // actor.getProperty().setEdgeColor(255 / 255, 87 / 255, 36 / 255);
         // actor.getProperty().setRepresentationToPoints();
+        const h1 = parseInt(md5(`C${c}_${i}_r`), 16) / max_hash;
+        const h2 = parseInt(md5(`C${c}_${i}_g`), 16) / max_hash;
+        const h3 = parseInt(md5(`C${c}_${i}_b`), 16) / max_hash;
+        actor.getProperty().setColor(h1, h2, h3);
 
         renderer.addActor(actor);
         // somewhat arbitrarily chosen property to use as the id
         // any value that's unique (and referenceable outside of this function) will do
         const id = mapper.getInputData().getNumberOfCells();
         let tmp = allActors;
-        tmp[k][id] = { name: `C${k}_${i}`, ids: GWASByIDP[`C${k}_${i}`], actor: actor };
+        tmp[c][id] = { name: `C${c}_${i}`, ids: GWASByIDP[`C${c}_${i}`], actor: actor };
         setAllActors(tmp);
 
         resetCamera();
         renderer.getActiveCamera().zoom(1.5);
         let orientation = actor.getOrientation()
-        actor.setOrientation(orientation[0] + 20, orientation[1] + 25, 0);
+        // actor.setOrientation(orientation[0] + 20, orientation[1] + 25, 0);
+        actor.setOrientation(orientation[0], previewRotation, 0);
+        vtkContainerRef.current.children[0].value = (i / c) * 100;
         // eslint-disable-next-line
-        if (i == k) {
+        if (i == c) {
+          // vtkContainerRef.current.children[0].remove()
+          vtkContainerRef.current.innerHTML = '';
+          genericRenderer.setContainer(vtkContainerRef.current);
           render();
+          setTimeout(render, 500);
         }
       });
-
-      // rotate each actor around camera
-      // const roll = () => {
-      //   // iterate through all actors
-      //   const actors = renderer.getActors();
-      //   actors.forEach((actor) => {
-      //     actor.setOrientation(0, actor.getOrientation()[1] + 0.01, 0);
-      //   });
-      //   render();
-      //   requestAnimationFrame(roll);
-      // }
-      // setRotationIntervals(rotationIntervals => [...rotationIntervals, requestAnimationFrame(roll)]);
 
     }
 
@@ -158,8 +144,8 @@ function App() {
       // console.log(cameraPos, ...picker.getActors().map(a => a.getBounds()), sortedByDim[0].getMapper().getInputData().getNumberOfCells());
       // const index = (renderer.getActiveCamera().getPosition()[2] > 0) ?  sortedByDim.length - 1 : 0;
       // picker.getActors().forEach((a) => console.log(a.getBounds(), a.getMapper().getInputData().getNumberOfCells(), picker.getPickPosition(), pos.x, pos.y));
-      setPhenotype(allActors[k][sortedByDim[0].getMapper().getInputData().getNumberOfCells()].name);
-      updateMenu(allActors[k][sortedByDim[0].getMapper().getInputData().getNumberOfCells()].name);
+      setPhenotype(allActors[c][sortedByDim[0].getMapper().getInputData().getNumberOfCells()].name);
+      setSearchQuery(allActors[c][sortedByDim[0].getMapper().getInputData().getNumberOfCells()].name);
 
 
       // get list of actors, set opacity to 0.5
@@ -175,99 +161,90 @@ function App() {
 
       sortedByDim[0].getProperty().setColor(255 / 255, 0 / 255, 0 / 255);
       sortedByDim[0].getProperty().setOpacity(1);
-      setAtlas(k)
-      render(); // necessary to actually change color
-      // if (vtkContainerRefs[k].current.parentNode.className === 'col-span-12') {
-      //   vtkContainerRefs[k].current.parentNode.className = 'col-span-7'
+      setAtlas(c)
+      window.render(); // necessary to actually change color
+      // if (vtkContainerRefs[c].current.parentNode.className === 'col-span-12') {
+      //   vtkContainerRefs[c].current.parentNode.className = 'col-span-7'
       // }
-      if (vtkContainerRefs[k].current.parentNode.className === 'col-span-12 sm:col-span-2') {
-        animateIn(vtkContainerRefs, k, vtkContainerRefs[k].current.parentNode.children[1])
-        updateMenu(`C${k}`)
-      }
+      // if (vtkContainerRefs[c].current.parentNode.className === 'col-span-12 sm:col-span-2') {
+      //   animateIn(c, vtkContainerRefs[c].current.parentNode.children[1])
+      //   setSearchQuery(`C${c}`)
+      // }
     });
   };
 
   useEffect(() => {
-    for (const k in vtkContainerRefs) {
-      if (Object.hasOwnProperty.call(vtkContainerRefs, k)) {
-        const vtkContainerRef = vtkContainerRefs[k];
-        if (vtkContainerRef.current.innerHTML !== '') {
-          return; // does this ever happen?
-        }
-        if (k <= 128) {
-          renderAtlas(vtkContainerRef, k);
-        } else {
-          vtkContainerRef.current.innerHTML = `
-          <svg class="animate-spin h-20 w-20 my-20 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style="margin:0 auto">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>`;
-          vtkContainerRef.current.style = "min-height: 200px;padding-top: 50px;";
-          setTimeout(() => {
+    if (atlas === 0) {
+      for (const c in vtkPreviews) {
+        if (Object.hasOwnProperty.call(vtkPreviews, c)) {
+          const container = vtkPreviews[c];
+          if (container.current) {
+            const img = container.current.children[0];
+            const base = `/data/static/MINA/C${c}/C${c}_rot`;
+            img.src = base + previewRotation + ".png";
             requestAnimationFrame(() => {
-              vtkContainerRef.current.innerHTML = '';
-              vtkContainerRef.current.style = "";
-              renderAtlas(vtkContainerRef, k);
+              if (previewRotation === 179) {
+                setPreviewRotation(-180);
+              } else {
+                setPreviewRotation(previewRotation + 1);
+              }
             });
-          }, k);
+          }
         }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  // }, [vtkContainerRefs, atlas]);
+  }, [previewRotation, atlas]);
 
-  const updateMenu = (x) => {
-    if (!x) {
-      return setSearchResults([]);
+  useEffect(() => {
+    if (searchQuery.length === 0) {
+      setSearchResults([]);
+    } else {
+      setSearchResults(matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, { keys: ['IDP'] }));
     }
-    setSearchResults(matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, x, { keys: atlas ? ['ID'] : ['ID', 'IDP'] }));
-  }
+  }, [searchQuery, atlas]);
 
-  const animateIn = (refs, k, e, fullwidth = false) => {
-    setAtlas(k);
+  const animateIn = (c, e, fullwidth = false) => {
+    setAtlas(c);
+    renderAtlas(c);
     backButtonRef.current.classList.remove('hidden');
     backButtonRef.current.parentNode.children[1].classList.add('pl-24')
     e.classList.add('hidden'); // clicked button
-    for (const key in refs) {
-      if (Object.hasOwnProperty.call(refs, key)) {
-        const r = refs[key];
-        const el = r.current.parentNode;
-        if (key !== k) {
-          el.classList.add('animate__animated', 'animate__zoomOutRight');
-          el.addEventListener('animationend', () => {
-            el.classList.add('hidden');
-            el.classList.remove('animate__animated', 'animate__zoomOutRight');
-          }, { once: true });
-        } else {
-          el.classList.add('animate__animated', 'animate__zoomInLeft', (fullwidth) ? 'col-span-12' : 'col-span-7');
-          el.classList.remove('col-span-12', 'sm:col-span-2');
-          el.addEventListener('animationend', () => {
-            el.classList.remove('animate__animated', 'animate__zoomInLeft');
-          }, { once: true });
-        }
+
+    vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomInLeft', (fullwidth) ? 'col-span-12' : 'col-span-7');
+    vtkContainerRef.current.classList.remove('col-span-12', 'sm:col-span-2');
+    vtkContainerRef.current.addEventListener('animationend', () => {
+      vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomInLeft');
+    }, { once: true });
+
+    for (const key in vtkPreviews) {
+      if (Object.hasOwnProperty.call(vtkPreviews, key)) {
+        const el = vtkPreviews[key].current;
+        el.classList.add('animate__animated', 'animate__zoomOutRight');
+        el.addEventListener('animationend', () => {
+          el.classList.add('hidden');
+          el.classList.remove('animate__animated', 'animate__zoomOutRight');
+        }, { once: true });
       }
     }
   }
 
-  const animateOut = (refs) => {
+  const animateOut = () => {
     setAtlas(0);
     backButtonRef.current.classList.add('hidden');
-    for (const key in refs) {
-      if (Object.hasOwnProperty.call(refs, key)) {
-        const r = refs[key];
-        const el = r.current.parentNode;
-        if (el.classList.contains('hidden')) {
-          el.classList.remove('hidden');
-          el.classList.add('animate__animated', 'animate__zoomInLeft');
-          el.addEventListener('animationend', () => {
-            el.classList.remove('animate__animated', 'animate__zoomInLeft');
-          }, { once: true });
-        } else {
-          el.classList.remove('col-span-7', 'col-span-12');
-          el.classList.add('col-span-12', 'sm:col-span-2');
-          el.children[1].classList.remove('hidden');
-        }
+    vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomOutRight');
+    vtkContainerRef.current.addEventListener('animationend', () => {
+      vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomOutRight');
+      vtkContainerRef.current.innerHTML = '';
+    }, { once: true });
+    for (const key in vtkPreviews) {
+      if (Object.hasOwnProperty.call(vtkPreviews, key)) {
+        const el = vtkPreviews[key].current;
+        el.classList.remove('hidden');
+        el.classList.add('animate__animated', 'animate__zoomInLeft');
+        el.addEventListener('animationend', () => {
+          el.classList.remove('animate__animated', 'animate__zoomInLeft');
+        }, { once: true });
       }
     }
   }
@@ -334,21 +311,20 @@ function App() {
                   disabled.getProperty().setOpacity(1);
                   disabled.getProperty().setColor(Math.floor(Math.random() * 255) / 255, Math.floor(Math.random() * 255) / 255, Math.floor(Math.random() * 255) / 255);
                 }
-                for (let i = 0; i < renderWindows.length; i++) {
-                  renderWindows[i].render();
-                }
-                animateOut(vtkContainerRefs);
+                window.render();
+                animateOut();
                 setSearchResults([]);
                 setPhenotype('');
                 setAtlas(0);
                 e.target.parentNode.children[1].classList.remove('pl-24');
                 backButtonRef.current.parentNode.children[1].value = '';
               }}>&larr; Back</button>
-              <input type="text" placeholder="Search for a variant, gene, or phenotype" className="input input-bordered input-primary w-full" onChange={x => updateMenu(x.target.value)} />
+              {/* onChange={x => setSearchQuery(x.target.value)} */}
+              <input type="text" placeholder="Search for a variant, gene, or phenotype" className="input input-bordered input-primary w-full" value={searchQuery} onChange={x => setSearchQuery(x.target.value)} />
             </div>
           </div>
         </form>
-        <div className={searchResults.length > 0 ? "overflow-x-auto overflow-y-auto max-h-80 col-span-12" : "hidden"}>
+        <div className={searchResults.length > 0 ? "overflow-x-auto overflow-y-auto max-h-80 col-span-5" : "hidden"}>
           <table className="table w-full table-compact">
             <thead>
               <tr>
@@ -362,17 +338,18 @@ function App() {
               {searchResults.map((x, i) => (
                 <tr key={i} className="hover cursor-pointer" onClick={() => {
                   setPhenotype(x.IDP);
-                  updateMenu(x.IDP);
+                  setSearchQuery(x.IDP);
                   backButtonRef.current.parentNode.children[1].value = x.ID; // set the input value to the ID
-                  const atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
-                  setAtlas(atlas);
-                  animateIn(vtkContainerRefs, atlas, vtkContainerRefs[atlas].current.parentNode.children[1])
+                  const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
+                  if (atlas === 0) {
+                    animateIn(x_atlas, vtkPreviews[x_atlas].current.parentNode.children[1])
+                  }
                   // make actors grayed out
                   // const actors = renderWindows[i].getRenderers()[0].getActors();
                   const opacity = []
-                  for (const k in allActors[atlas]) {
-                    if (Object.hasOwnProperty.call(allActors[atlas], k)) {
-                      const actor = allActors[atlas][k];
+                  for (const c in allActors[x_atlas]) {
+                    if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
+                      const actor = allActors[x_atlas][c];
                       if (actor.name === x.IDP && actor.ids !== undefined && actor.ids.includes(x.ID)) {
                         actor.actor.getProperty().setColor(1, 0, 0);
                         actor.actor.getProperty().setOpacity(1);
@@ -383,9 +360,7 @@ function App() {
                       }
                     }
                   }
-                  for (let i = 0; i < renderWindows.length; i++) {
-                    renderWindows[i].render();
-                  }
+                  window.render();
                   setGrayedOut(opacity);
                 }}>
                   <td>{x.IDP}</td>
@@ -396,13 +371,29 @@ function App() {
               ))}
             </tbody>
           </table>
+          <p><button className="btn btn-link pl-0" onClick={() => {
+            for (let i = 0; i < grayedOut.length; i++) {
+              const disabled = grayedOut[i];
+              disabled.getProperty().setOpacity(1);
+              disabled.getProperty().setColor(Math.floor(Math.random() * 255) / 255, Math.floor(Math.random() * 255) / 255, Math.floor(Math.random() * 255) / 255);
+            }
+            setPhenotype('');
+            window.render();
+          }}>Reset selection</button>.</p>
         </div>
-        {/* <div ref={vtkContainerRef} className={phenotype.length > 0 ? "col-span-6 w-full max-w-screen-lg" : "col-span-12 w-full max-w-screen-lg"} style={{margin: "0 auto"}} /> */}
-        {Object.keys(vtkContainerRefs).map((k => {
+        <p className={(atlas > 0 && phenotype.length === 0) ? "text-center col-span-7" : "hidden"}>Search or right-click an IDP to see more info.</p>
+        <a className={phenotype.length > 0 ? "col-span-7" : "hidden"} href={window.location.href.split("#") + '#manhattan-modal'}>
+          <img src={`/data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} className="w-full max-h-full" />
+        </a>
+        <div ref={vtkContainerRef} className={phenotype.length > 0 ? "col-span-7 w-full max-w-screen-lg" : "col-span-12 w-full max-w-screen-lg"} />
+        {Object.keys(vtkPreviews).map((c => {
           return (
-            <div className="col-span-12 sm:col-span-2">
-              <div ref={vtkContainerRefs[k]} className="w-full" />
-              <button className="btn btn-primary btn-outline btn-block" onClick={(e) => animateIn(vtkContainerRefs, k, e.target)}>Explore C{k}</button>
+            <div className="col-span-12 sm:col-span-2" ref={vtkPreviews[c]}>
+              <img src={`/data/static/MINA/C${c}/C${c}_rot0.png`} className="w-full" alt="" />
+              <button className="btn btn-primary btn-outline btn-block" onClick={(e) => {
+                animateIn(c, e.target);
+                setSearchQuery('C' + c);
+              }}>3D View C{c}</button>
             </div>
           )
         }))}
@@ -415,15 +406,7 @@ function App() {
             <img className="w-full" src={`/data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} />
           </div>
         </div> */}
-          <p className={(atlas > 0 && phenotype.length === 0) ? "text-center" : "hidden"}>Search or right-click an IDP to see more info.</p>
           <div className={phenotype.length > 0 ? "grid grid-cols-12 gap-1 px-24" : "hidden"}>
-            <a className="col-span-12 relative" href={window.location.href.split("#") + '#manhattan-modal'}>
-              <svg className="animate-spin h-20 w-20 my-20 text-black absolute" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style={{ zIndex: -1, top: 0, left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto', width: '100%' }}>
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <img src={`/data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} className="w-full" />
-            </a>
             <a className="col-span-12" href={window.location.href.split("#") + '#qq-modal'}><img src={`/data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} className="w-full" /></a>
           </div>
         </div>
