@@ -30,6 +30,7 @@ const GWASByAtlas = GWAS.reduce((acc, curr) => {
   acc[atlas].push(curr);
   return acc;
 }, {});
+const max_hash = 0xffffffffffffffffffffffffffffffff;
 
 
 function App() {
@@ -57,6 +58,8 @@ function App() {
   const [atlas, setAtlas] = useState(0);
   const [phenotype, setPhenotype] = useState('');
   const [grayedOut, setGrayedOut] = useState([]);
+  const [typingTimer, setTypingTimer] = useState(null);
+  const [chartType, setChartType] = useState('manhattan'); // or 'qq'
 
   const renderAtlas = (c) => {
     vtkContainerRef.current.innerHTML = '<progress class="progress progress-primary" value="0" max="100"></progress>';
@@ -79,7 +82,6 @@ function App() {
     window.render = render;
 
     const reader = vtkPolyDataReader.newInstance();
-    const max_hash = 0xffffffffffffffffffffffffffffffff;
     for (let i = 1; i <= c; i++) {
 
       reader.setUrl(`/data/MINA/C${c}/C${c}_C${i}.vtk`).then(() => {
@@ -111,7 +113,7 @@ function App() {
         setAllActors(tmp);
 
         resetCamera();
-        renderer.getActiveCamera().zoom(1.5);
+        renderer.getActiveCamera().zoom(1.75);
         let orientation = actor.getOrientation()
         // actor.setOrientation(orientation[0] + 20, orientation[1] + 25, 0);
         actor.setOrientation(orientation[0], previewRotation, 0);
@@ -129,7 +131,7 @@ function App() {
     }
 
     // https://kitware.github.io/vtk-js/examples/CellPicker.html
-    renderWindow.getInteractor().onRightButtonPress((e) => {
+    const highlightCell = (e) => {
       if (renderer !== e.pokedRenderer) {
         return;
       }
@@ -164,14 +166,16 @@ function App() {
       setAtlas(c)
       window.render(); // necessary to actually change color
       // if (vtkContainerRefs[c].current.parentNode.className === 'col-span-12') {
-      //   vtkContainerRefs[c].current.parentNode.className = 'col-span-7'
+      //   vtkContainerRefs[c].current.parentNode.className = 'col-span-4'
       // }
       // if (vtkContainerRefs[c].current.parentNode.className === 'col-span-12 sm:col-span-2') {
       //   animateIn(c, vtkContainerRefs[c].current.parentNode.children[1])
       //   setSearchQuery(`C${c}`)
       // }
-    });
-  };
+    }
+    renderWindow.getInteractor().onRightButtonPress(highlightCell);
+    // renderWindow.getInteractor().onLeftButtonPress(highlightCell);
+  }; // end of renderAtlas
 
   useEffect(() => {
     if (atlas === 0) {
@@ -204,14 +208,14 @@ function App() {
     }
   }, [searchQuery, atlas]);
 
-  const animateIn = (c, e, fullwidth = false) => {
+  const animateIn = (c, e) => {
     setAtlas(c);
     renderAtlas(c);
     backButtonRef.current.classList.remove('hidden');
     backButtonRef.current.parentNode.children[1].classList.add('pl-24')
     e.classList.add('hidden'); // clicked button
 
-    vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomInLeft', (fullwidth) ? 'col-span-12' : 'col-span-7');
+    vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomInLeft');
     vtkContainerRef.current.classList.remove('col-span-12', 'sm:col-span-2');
     vtkContainerRef.current.addEventListener('animationend', () => {
       vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomInLeft');
@@ -251,22 +255,6 @@ function App() {
 
   return (
     <div>
-      <div id="manhattan-modal" className="modal">
-        <div className="modal-box">
-          <img src={`/data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} className="w-full" />
-          <div className="modal-action">
-            <a href={window.location.href.split("#")[0] + '#'} className="btn">Close</a>
-          </div>
-        </div>
-      </div>
-      <div id="qq-modal" className="modal">
-        <div className="modal-box">
-          <img src={`/data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} className="w-full" />
-          <div className="modal-action">
-            <a href={window.location.href.split("#")[0] + '#'} className="btn">Close</a>
-          </div>
-        </div>
-      </div>
 
       <div className="grid grid-cols-12 gap-1 px-24">
         <div className="col-span-12 py-4">
@@ -302,6 +290,39 @@ function App() {
         </div>
         <h1 className="col-span-12 text-4xl font-bold">BRIDGEPORT: Bridge knowledge across brain imaging, genomics, cognition and pathology</h1>
         <h4 className="col-span-12 text-xl">Browse IWAS, GWAS, and gene-level associations for imaging, cognitive, pathological and clinical traits</h4>
+        <div className={phenotype.length > 0 ? "col-span-8" : "hidden"}>
+        <div class="tabs">
+          <button onClick={x => setChartType('manhattan')} className={chartType === 'manhattan' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>Manhattan</button>
+          <button onClick={x => setChartType('qq')} className={chartType === 'qq' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>QQ</button>
+        </div>
+        <img className={phenotype.length > 0 && chartType === 'manhattan' ? 'w-full' : 'hidden'} src={`/data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} />
+        <img className={phenotype.length > 0 && chartType === 'qq' ? '' : 'hidden'} src={`/data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} style={{maxHeight: '37rem'}} />
+        </div>
+        <div className={atlas > 0 && phenotype.length === 0 ? "col-span-12" : (atlas > 0 ? "col-span-4 w-full" : "hidden")}>
+          <div style={{ margin: '0 auto' }} className="max-w-lg" ref={vtkContainerRef} />
+        </div>
+        {Object.keys(vtkPreviews).map((c => {
+          return (
+            <div className="col-span-12 sm:col-span-2" ref={vtkPreviews[c]}>
+              <img src={`/data/static/MINA/C${c}/C${c}_rot0.png`} className="w-full" alt="" />
+              <button className="btn btn-primary btn-block btn-sm" onClick={(e) => {
+                animateIn(c, e.target);
+              }}>3D View C{c}</button>
+            </div>
+          )
+        }))}
+        <p class={phenotype.length > 0 ? "col-span-12 text-right" : "hidden"}><button className="btn btn-link btn-sm" onClick={() => {
+          for (let i = 0; i < grayedOut.length; i++) {
+            const disabled = grayedOut[i];
+            disabled.getProperty().setOpacity(1);
+            const h1 = parseInt(md5(`C${atlas}_${i}_r`), 16) / max_hash;
+            const h2 = parseInt(md5(`C${atlas}_${i}_g`), 16) / max_hash;
+            const h3 = parseInt(md5(`C${atlas}_${i}_b`), 16) / max_hash;
+            disabled.getProperty().setColor(h1, h2, h3);
+          }
+          setPhenotype('');
+          window.render();
+        }}>Reset selection</button>.</p>
         <form className="col-span-12">
           <div className="form-control my-2">
             <div className="relative">
@@ -309,7 +330,10 @@ function App() {
                 for (let i = 0; i < grayedOut.length; i++) {
                   const disabled = grayedOut[i];
                   disabled.getProperty().setOpacity(1);
-                  disabled.getProperty().setColor(Math.floor(Math.random() * 255) / 255, Math.floor(Math.random() * 255) / 255, Math.floor(Math.random() * 255) / 255);
+                  const h1 = parseInt(md5(`C${atlas}_${i}_r`), 16) / max_hash;
+                  const h2 = parseInt(md5(`C${atlas}_${i}_g`), 16) / max_hash;
+                  const h3 = parseInt(md5(`C${atlas}_${i}_b`), 16) / max_hash;
+                  disabled.getProperty().setColor(h1, h2, h3);
                 }
                 window.render();
                 animateOut();
@@ -319,12 +343,23 @@ function App() {
                 e.target.parentNode.children[1].classList.remove('pl-24');
                 backButtonRef.current.parentNode.children[1].value = '';
               }}>&larr; Back</button>
-              {/* onChange={x => setSearchQuery(x.target.value)} */}
-              <input type="text" placeholder="Search for a variant, gene, or phenotype" className="input input-bordered input-primary w-full" value={searchQuery} onChange={x => setSearchQuery(x.target.value)} />
+              <input type="text" placeholder="Search for a variant, gene, or phenotype" className="input input-bordered input-primary w-full" onChange={x => {
+                // wait to see if the user has stopped typing
+                if (typingTimer !== null) {
+                  clearTimeout(typingTimer);
+                }
+                const timeout = setTimeout(() => {
+                  setSearchQuery(x.target.value);
+                  setTypingTimer(null);
+                }, 500);
+                setTypingTimer(timeout);
+              }} />
             </div>
           </div>
         </form>
-        <div className={searchResults.length > 0 ? "overflow-x-auto overflow-y-auto max-h-80 col-span-5" : "hidden"}>
+        <p className={searchResults.length === 0 && searchQuery.length > 0 ? "col-span-12" : "hidden"}>No results for "{searchQuery}".</p>
+        <p className={(atlas > 0 && phenotype.length === 0) ? "text-center col-span-12" : "hidden"}>Search or right-click an IDP to see more info.</p>
+        <div className={searchResults.length > 0 ? "overflow-x-auto overflow-y-auto max-h-80 col-span-12" : "hidden"}>
           <table className="table w-full table-compact">
             <thead>
               <tr>
@@ -371,46 +406,8 @@ function App() {
               ))}
             </tbody>
           </table>
-          <p><button className="btn btn-link pl-0" onClick={() => {
-            for (let i = 0; i < grayedOut.length; i++) {
-              const disabled = grayedOut[i];
-              disabled.getProperty().setOpacity(1);
-              disabled.getProperty().setColor(Math.floor(Math.random() * 255) / 255, Math.floor(Math.random() * 255) / 255, Math.floor(Math.random() * 255) / 255);
-            }
-            setPhenotype('');
-            window.render();
-          }}>Reset selection</button>.</p>
         </div>
-        <p className={(atlas > 0 && phenotype.length === 0) ? "text-center col-span-7" : "hidden"}>Search or right-click an IDP to see more info.</p>
-        <a className={phenotype.length > 0 ? "col-span-7" : "hidden"} href={window.location.href.split("#") + '#manhattan-modal'}>
-          <img src={`/data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} className="w-full max-h-full" />
-        </a>
-        <div ref={vtkContainerRef} className={phenotype.length > 0 ? "col-span-7 w-full max-w-screen-lg" : "col-span-12 w-full max-w-screen-lg"} />
-        {Object.keys(vtkPreviews).map((c => {
-          return (
-            <div className="col-span-12 sm:col-span-2" ref={vtkPreviews[c]}>
-              <img src={`/data/static/MINA/C${c}/C${c}_rot0.png`} className="w-full" alt="" />
-              <button className="btn btn-primary btn-outline btn-block" onClick={(e) => {
-                animateIn(c, e.target);
-                setSearchQuery('C' + c);
-              }}>3D View C{c}</button>
-            </div>
-          )
-        }))}
-        <div className="col-span-5">
-          {/* <div className="carousel rounded-box w-full">
-          <div className="carousel-item w-full">
-            <img className="w-full" src={`/data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} />
-          </div>
-          <div className="carousel-item w-full">
-            <img className="w-full" src={`/data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} />
-          </div>
-        </div> */}
-          <div className={phenotype.length > 0 ? "grid grid-cols-12 gap-1 px-24" : "hidden"}>
-            <a className="col-span-12" href={window.location.href.split("#") + '#qq-modal'}><img src={`/data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} className="w-full" /></a>
-          </div>
-        </div>
-      </div>
+      </div> {/* end of grid */}
     </div>
   );
 
