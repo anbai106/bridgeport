@@ -36,6 +36,7 @@ const max_hash = 0xffffffffffffffffffffffffffffffff;
 function App() {
   const vtkContainerRef = useRef(null);
   const backButtonRef = useRef(null);
+  const progressRef = useRef(null);
   const vtkPreviews = {
     32: useRef(null),
     64: useRef(null),
@@ -44,7 +45,6 @@ function App() {
     512: useRef(null),
     1024: useRef(null),
   };
-  const [previewRotation, setPreviewRotation] = useState(0);
   const [allActors, setAllActors] = useState({
     32: {},
     64: {},
@@ -61,8 +61,8 @@ function App() {
   const [typingTimer, setTypingTimer] = useState(null);
   const [chartType, setChartType] = useState('manhattan'); // or 'qq'
 
-  const renderAtlas = (c) => {
-    vtkContainerRef.current.innerHTML = '<progress class="progress progress-primary" value="0" max="100"></progress>';
+  const renderAtlas = (c, cb = null) => {
+    vtkContainerRef.current.innerHTML = '';
 
     // ----------------------------------------------------------------------------
     // Standard rendering code setup
@@ -113,18 +113,29 @@ function App() {
         setAllActors(tmp);
 
         resetCamera();
-        renderer.getActiveCamera().zoom(1.75);
-        let orientation = actor.getOrientation()
+        // renderer.getActiveCamera().zoom(1.25);
+        // let orientation = actor.getOrientation()
         // actor.setOrientation(orientation[0] + 20, orientation[1] + 25, 0);
-        actor.setOrientation(orientation[0], previewRotation, 0);
-        vtkContainerRef.current.children[0].value = (i / c) * 100;
-        // eslint-disable-next-line
-        if (i == c) {
+        // actor.setOrientation(orientation[0], previewRotation, 0);
+        // actor.setPosition(0, 350 + ((1/c)*1000), 0);
+        progressRef.current.dataset.value++;
+        progressRef.current.value = progressRef.current.dataset.value / c;
+        if (progressRef.current.dataset.value === c) {
           // vtkContainerRef.current.children[0].remove()
           vtkContainerRef.current.innerHTML = '';
+          // window[`actor${c}`] = actor;
           genericRenderer.setContainer(vtkContainerRef.current);
           render();
-          setTimeout(render, 500);
+          setTimeout(() => {
+            if (cb !== null) {
+              cb();
+            }
+            // const focalPoint = camera.getFocalPoint();
+            // camera.setFocalPoint(focalPoint[0], -75 - ((1/c) * 500), focalPoint[2]);
+            progressRef.current.value = 0;
+            progressRef.current.dataset.value = 0;
+            render();
+          }, 750);
         }
       });
 
@@ -138,9 +149,13 @@ function App() {
 
       const pos = e.position;
       const picker = vtkCellPicker.newInstance();
+      const camera = renderer.getActiveCamera()
       picker.setTolerance(0);
       picker.pick([pos.x, pos.y, 0], renderer);
-      const cameraPos = renderer.getActiveCamera().getPosition();
+      if (picker.getActors().length === 0) {
+        return;
+      }
+      const cameraPos = camera.getPosition();
       const largestDim = cameraPos.reduce((iMax, x, i, arr) => x > arr[iMax] ? i : iMax, 0) * 2
       const sortedByDim = picker.getActors().sort((a, b) => (a.getBounds()[largestDim + 1] + a.getBounds()[largestDim]) - (b.getBounds()[largestDim + 1] + b.getBounds()[largestDim])).reverse()
       // console.log(cameraPos, ...picker.getActors().map(a => a.getBounds()), sortedByDim[0].getMapper().getInputData().getNumberOfCells());
@@ -178,42 +193,22 @@ function App() {
   }; // end of renderAtlas
 
   useEffect(() => {
-    if (atlas === 0) {
-      for (const c in vtkPreviews) {
-        if (Object.hasOwnProperty.call(vtkPreviews, c)) {
-          const container = vtkPreviews[c];
-          if (container.current) {
-            const img = container.current.children[0];
-            const base = `/data/static/MINA/C${c}/C${c}_rot`;
-            img.src = base + previewRotation + ".png";
-            requestAnimationFrame(() => {
-              if (previewRotation === 179) {
-                setPreviewRotation(-180);
-              } else {
-                setPreviewRotation(previewRotation + 1);
-              }
-            });
-          }
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previewRotation, atlas]);
-
-  useEffect(() => {
     if (searchQuery.length === 0) {
       setSearchResults([]);
     } else {
-      setSearchResults(matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, { keys: ['IDP'] }));
+      let matches = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, { keys: ['IDP'] });
+      if (matches.length === 0) {
+        matches = atlas > 0 ? GWASByAtlas[atlas] : GWAS
+      }
+      setSearchResults(matches);
     }
   }, [searchQuery, atlas]);
 
-  const animateIn = (c, e) => {
+  const animateIn = (c, cb = null) => {
     setAtlas(c);
-    renderAtlas(c);
+    renderAtlas(c, cb);
     backButtonRef.current.classList.remove('hidden');
     backButtonRef.current.parentNode.children[1].classList.add('pl-24')
-    e.classList.add('hidden'); // clicked button
 
     vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomInLeft');
     vtkContainerRef.current.classList.remove('col-span-12', 'sm:col-span-2');
@@ -257,7 +252,7 @@ function App() {
     <div>
 
       <div className="grid grid-cols-12 gap-1 px-24">
-        <div className="col-span-12 py-4">
+        <div className="col-span-12 py-4 z-10">
           <ul className={(window.innerWidth > 640 ? 'horizontal ' : '') + "menu items-stretch px-3 shadow-lg bg-base-100 w-full sm:w-auto rounded-box float-right"}>
             <li className="bordered">
               <a href="/">
@@ -288,30 +283,34 @@ function App() {
             </li>
           </ul>
         </div>
-        <h1 className="col-span-12 text-4xl font-bold">BRIDGEPORT: Bridge knowledge across brain imaging, genomics, cognition and pathology</h1>
-        <h4 className="col-span-12 text-xl">Browse IWAS, GWAS, and gene-level associations for imaging, cognitive, pathological and clinical traits</h4>
-        <div className={phenotype.length > 0 ? "col-span-8" : "hidden"}>
-        <div class="tabs">
-          <button onClick={x => setChartType('manhattan')} className={chartType === 'manhattan' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>Manhattan</button>
-          <button onClick={x => setChartType('qq')} className={chartType === 'qq' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>QQ</button>
+        <h1 className="col-span-12 text-4xl font-bold z-10">BRIDGEPORT: Bridge knowledge across brain imaging, genomics, cognition and pathology</h1>
+        <h4 className="col-span-12 text-xl z-10">Browse IWAS, GWAS, and gene-level associations for imaging, cognitive, pathological and clinical traits</h4>
+        {/* data-value is the number of actors loaded, value is the % */}
+        <progress className={progressRef.current === null || progressRef.current.value === 0 ? "hidden" : "progress progress-primary z-50 col-span-12 w-full"} style={{ marginBottom: '70vh' }} data-value="0" value="0" min="0" max="100" ref={progressRef}></progress>
+        <div className={phenotype.length > 0 ? "col-span-8 z-10 relative" : "hidden"}>
+          <div className="tabs">
+            <button onClick={x => setChartType('manhattan')} className={chartType === 'manhattan' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>Manhattan</button>
+            <button onClick={x => setChartType('qq')} className={chartType === 'qq' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>QQ</button>
+          </div>
+          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`/data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} />
+          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`/data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
         </div>
-        <img className={phenotype.length > 0 && chartType === 'manhattan' ? 'w-full' : 'hidden'} src={`/data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} />
-        <img className={phenotype.length > 0 && chartType === 'qq' ? '' : 'hidden'} src={`/data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} style={{maxHeight: '37rem'}} />
-        </div>
-        <div className={atlas > 0 && phenotype.length === 0 ? "col-span-12" : (atlas > 0 ? "col-span-4 w-full" : "hidden")}>
-          <div style={{ margin: '0 auto' }} className="max-w-lg" ref={vtkContainerRef} />
+        <div className={atlas > 0 ? (phenotype.length === 0 ? "col-span-12 -z-50" : "col-span-4") : "hidden"}>
+          <div style={phenotype.length === 0 ? { maxHeight: '70vh', position: 'relative', bottom: '30vh' } : {}} className="-z-40">
+            <div className={atlas > 0 && phenotype.length === 0 ? "-z-30 animate__animated animate__bounceInDown" : "max-w-lg -z-30 animate__animated animate__bounceInLeft"} ref={vtkContainerRef} />
+          </div>
         </div>
         {Object.keys(vtkPreviews).map((c => {
           return (
-            <div className="col-span-12 sm:col-span-2" ref={vtkPreviews[c]}>
-              <img src={`/data/static/MINA/C${c}/C${c}_rot0.png`} className="w-full" alt="" />
+            <div className="col-span-12 sm:col-span-2" ref={vtkPreviews[c]} key={c}>
+              <img src={`/data/static/gifs/C${c}.gif`} className="w-full animate__animated animate__bounceInDown" alt={"C" + c} />
               <button className="btn btn-primary btn-block btn-sm" onClick={(e) => {
-                animateIn(c, e.target);
+                animateIn(c);
               }}>3D View C{c}</button>
             </div>
           )
         }))}
-        <p class={phenotype.length > 0 ? "col-span-12 text-right" : "hidden"}><button className="btn btn-link btn-sm" onClick={() => {
+        <p className={phenotype.length > 0 ? "col-span-12 text-right" : "hidden"}><button className="btn btn-link btn-sm" onClick={() => {
           for (let i = 0; i < grayedOut.length; i++) {
             const disabled = grayedOut[i];
             disabled.getProperty().setOpacity(1);
@@ -351,7 +350,7 @@ function App() {
                 const timeout = setTimeout(() => {
                   setSearchQuery(x.target.value);
                   setTypingTimer(null);
-                }, 500);
+                }, 900);
                 setTypingTimer(timeout);
               }} />
             </div>
@@ -377,26 +376,29 @@ function App() {
                   backButtonRef.current.parentNode.children[1].value = x.ID; // set the input value to the ID
                   const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
                   if (atlas === 0) {
-                    animateIn(x_atlas, vtkPreviews[x_atlas].current.parentNode.children[1])
-                  }
-                  // make actors grayed out
-                  // const actors = renderWindows[i].getRenderers()[0].getActors();
-                  const opacity = []
-                  for (const c in allActors[x_atlas]) {
-                    if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
-                      const actor = allActors[x_atlas][c];
-                      if (actor.name === x.IDP && actor.ids !== undefined && actor.ids.includes(x.ID)) {
-                        actor.actor.getProperty().setColor(1, 0, 0);
-                        actor.actor.getProperty().setOpacity(1);
-                      } else {
-                        actor.actor.getProperty().setColor(0.5, 0.5, 0.5);
-                        actor.actor.getProperty().setOpacity(0.2);
-                        opacity.push(actor.actor);
+                    animateIn(x_atlas, () => {
+                      // make actors grayed out
+                      // const actors = renderWindows[i].getRenderers()[0].getActors();
+                      progressRef.current.value = 0;
+                      progressRef.current.dataset.value = 0;
+                      const opacity = []
+                      for (const c in allActors[x_atlas]) {
+                        if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
+                          const actor = allActors[x_atlas][c];
+                          if (actor.name === x.IDP && actor.ids !== undefined && actor.ids.includes(x.ID)) {
+                            actor.actor.getProperty().setColor(1, 0, 0);
+                            actor.actor.getProperty().setOpacity(1);
+                          } else {
+                            actor.actor.getProperty().setColor(0.5, 0.5, 0.5);
+                            actor.actor.getProperty().setOpacity(0.2);
+                            opacity.push(actor.actor);
+                          }
+                        }
                       }
-                    }
+                      window.render();
+                      setGrayedOut(opacity);
+                    });
                   }
-                  window.render();
-                  setGrayedOut(opacity);
                 }}>
                   <td>{x.IDP}</td>
                   <td>{x.ID}</td>
