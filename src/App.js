@@ -98,6 +98,8 @@ function App() {
 
   const renderAtlas = (c, cb = null) => {
     vtkContainerRef.current.innerHTML = '';
+    progressRef.current.classList.remove('hidden');
+    progressRef.current.classList.add("progress", "progress-primary", "z-50", "col-span-12", "w-full");
 
     // ----------------------------------------------------------------------------
     // Standard rendering code setup
@@ -117,11 +119,18 @@ function App() {
     window.render = render;
 
     const reader = vtkPolyDataReader.newInstance();
+    const functions = [];
     for (let i = 1; i <= c; i++) {
-
-      reader.setUrl(`/data/MINA/C${c}/C${c}_C${i}.vtk`).then(() => {
+      functions[i - 1] = () => {
         const polydata = reader.getOutputData();
         if (polydata === undefined) { // sometimes the browser will fail to load (as we're requesting files very quickly)
+          console.error('failed to load mesh', i);
+          if (functions[i - 1] !== undefined) {
+            setTimeout(() => {
+              functions[i - 1]();
+              functions[i - 1] = undefined; // only retry once
+            }, 100);
+          }
           return;
         }
         const mapper = vtkMapper.newInstance();
@@ -154,7 +163,7 @@ function App() {
         // actor.setOrientation(orientation[0], previewRotation, 0);
         // actor.setPosition(0, 350 + ((1/c)*1000), 0);
         progressRef.current.dataset.value++;
-        progressRef.current.value = progressRef.current.dataset.value / c;
+        progressRef.current.value = (progressRef.current.dataset.value / c) * 100;
         if (progressRef.current.dataset.value === c) {
           // vtkContainerRef.current.children[0].remove()
           vtkContainerRef.current.innerHTML = '';
@@ -169,10 +178,13 @@ function App() {
             // camera.setFocalPoint(focalPoint[0], -75 - ((1/c) * 500), focalPoint[2]);
             progressRef.current.value = 0;
             progressRef.current.dataset.value = 0;
+            progressRef.current.classList.add('hidden');
+            progressRef.current.classList.remove("progress", "progress-primary", "z-50", "col-span-12", "w-full");
             render();
           }, 750);
         }
-      });
+      }
+      reader.setUrl(`/data/MINA/C${c}/C${c}_C${i}.vtk`).then(functions[i - 1]);
 
     }
 
@@ -353,7 +365,8 @@ function App() {
         <h1 className="col-span-12 text-4xl font-bold z-10">BRIDGEPORT: Bridge knowledge across brain imaging, genomics, cognition and pathology</h1>
         <h4 className="col-span-12 text-xl z-10">Browse IWAS, GWAS, and gene-level associations for imaging, cognitive, pathological and clinical traits</h4>
         {/* data-value is the number of actors loaded, value is the % */}
-        <progress className={progressRef.current === null || progressRef.current.value === 0 ? "hidden" : "progress progress-primary z-50 col-span-12 w-full"} style={{ marginBottom: '70vh' }} data-value="0" value="0" min="0" max="100" ref={progressRef}></progress>
+        {/* eslint-disable-next-line eqeqeq */}
+        <progress className="hidden" style={{ marginBottom: '70vh' }} data-value="0" value="0" min="0" max="100" ref={progressRef}></progress>
         <div className={phenotype.length > 0 ? "col-span-8 z-10 relative" : "hidden"}>
           <div className="tabs">
             <button onClick={x => setChartType('manhattan')} className={chartType === 'manhattan' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>Manhattan</button>
@@ -454,8 +467,6 @@ function App() {
                     animateIn(x_atlas, () => {
                       // make actors grayed out
                       // const actors = renderWindows[i].getRenderers()[0].getActors();
-                      progressRef.current.value = 0;
-                      progressRef.current.dataset.value = 0;
                       const opacity = []
                       for (const c in allActors[x_atlas]) {
                         if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
@@ -507,8 +518,6 @@ function App() {
                     animateIn(x_atlas, () => {
                       // make actors grayed out
                       // const actors = renderWindows[i].getRenderers()[0].getActors();
-                      progressRef.current.value = 0;
-                      progressRef.current.dataset.value = 0;
                       const opacity = []
                       for (const c in allActors[x_atlas]) {
                         if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
@@ -561,8 +570,6 @@ function App() {
                     animateIn(x_atlas, () => {
                       // make actors grayed out
                       // const actors = renderWindows[i].getRenderers()[0].getActors();
-                      progressRef.current.value = 0;
-                      progressRef.current.dataset.value = 0;
                       const opacity = []
                       for (const c in allActors[x_atlas]) {
                         if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
@@ -620,8 +627,6 @@ function App() {
                     animateIn(x_atlas, () => {
                       // make actors grayed out
                       // const actors = renderWindows[i].getRenderers()[0].getActors();
-                      progressRef.current.value = 0;
-                      progressRef.current.dataset.value = 0;
                       const opacity = []
                       for (const c in allActors[x_atlas]) {
                         if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
@@ -677,8 +682,6 @@ function App() {
                     animateIn(x_atlas, () => {
                       // make actors grayed out
                       // const actors = renderWindows[i].getRenderers()[0].getActors();
-                      progressRef.current.value = 0;
-                      progressRef.current.dataset.value = 0;
                       const opacity = []
                       for (const c in allActors[x_atlas]) {
                         if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
