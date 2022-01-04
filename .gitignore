@@ -26,3 +26,4 @@ utils/*.html
 
 # data
 /data
+!data/*.json
