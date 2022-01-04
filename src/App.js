@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { matchSorter } from 'match-sorter'
-import md5 from 'md5';
+import md5 from 'md5'; // for setting color the same as in the python script
 // import vtkFullScreenRenderWindow from '@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow';
 import '@kitware/vtk.js/Rendering/Profiles/Geometry';
 import vtkGenericRenderWindow from '@kitware/vtk.js/Rendering/Misc/GenericRenderWindow';
@@ -13,8 +13,36 @@ import vtkCellPicker from '@kitware/vtk.js/Rendering/Core/CellPicker';
 // import vtkSphereSource from '@kitware/vtk.js/Filters/Sources/SphereSource';
 // import vtkCamera from '@kitware/vtk.js/Rendering/Core/Camera';
 import 'animate.css';
+
+// data imports
 import GWAS from './data/GWAS.json';
+import IWAS from './data/IWAS.json';
+import heritabilityEstimate from './data/heritability_estimate.json';
+import geneticCorrelation from './data/genetic_correlation.json';
+import geneAnalysis from './data/gene_analysis.json';
+
 // organize data for later
+const geneAnalysisByIDP = geneAnalysis.reduce((acc, curr) => {
+  if (!(curr.IDP in acc)) {
+    acc[curr.IDP] = [];
+  }
+  acc[curr.IDP].push(curr.GENE);
+  return acc;
+}, {});
+const geneticCorrelationByIDP = geneticCorrelation.reduce((acc, curr) => {
+  if (!(curr.IDP in acc)) {
+    acc[curr.IDP] = [];
+  }
+  acc[curr.IDP].push(curr.trait);
+  return acc;
+}, {});
+const IWASByIDP = IWAS.reduce((acc, curr) => {
+  if (!(curr.IDP in acc)) {
+    acc[curr.IDP] = [];
+  }
+  acc[curr.IDP].push(curr.trait);
+  return acc;
+}, {});
 const GWASByIDP = GWAS.reduce((acc, curr) => {
   if (!(curr.IDP in acc)) {
     acc[curr.IDP] = [];
@@ -31,6 +59,7 @@ const GWASByAtlas = GWAS.reduce((acc, curr) => {
   return acc;
 }, {});
 const max_hash = 0xffffffffffffffffffffffffffffffff;
+const clinical_traits = [...new Set(IWAS.map(d => d.trait))];
 
 
 function App() {
@@ -54,7 +83,13 @@ function App() {
     1024: {},
   });
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
+  const [searchResults, setSearchResults] = useState({
+    'GWAS': [],
+    'IWAS': [],
+    'geneticCorrelation': [],
+    'geneAnalysis': [],
+    'heritabilityEstimate': [],
+  });
   const [atlas, setAtlas] = useState(0);
   const [phenotype, setPhenotype] = useState('');
   const [grayedOut, setGrayedOut] = useState([]);
@@ -109,7 +144,7 @@ function App() {
         // any value that's unique (and referenceable outside of this function) will do
         const id = mapper.getInputData().getNumberOfCells();
         let tmp = allActors;
-        tmp[c][id] = { name: `C${c}_${i}`, ids: GWASByIDP[`C${c}_${i}`], actor: actor };
+        tmp[c][id] = { name: `C${c}_${i}`, ids: GWASByIDP[`C${c}_${i}`], iwas_traits: IWASByIDP[`C${c}_${i}`], genetic_correlation_traits: geneticCorrelationByIDP[`C${c}_${i}`], genes: geneAnalysisByIDP[`C${c}_${i}`], actor: actor };
         setAllActors(tmp);
 
         resetCamera();
@@ -193,15 +228,47 @@ function App() {
   }; // end of renderAtlas
 
   useEffect(() => {
+    const includesAndStartsWith = (str, arr) => {
+      for (let i = 0; i < arr.length; i++) {
+        if (str.includes(arr[i]) || str.startsWith(arr[i])) {
+          return true;
+        }
+      }
+      return false;
+    }
+    const matches = {
+      'GWAS': [],
+      'IWAS': [],
+      'geneticCorrelation': [],
+      'geneAnalysis': [],
+      'heritabilityEstimate': [],
+    };
     if (searchQuery.length === 0) {
-      setSearchResults([]);
+      setSearchResults(matches);
     } else {
-      let matches = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, { keys: ['IDP'] });
-      if (matches.length === 0) {
-        matches = atlas > 0 ? GWASByAtlas[atlas] : GWAS
+      if (searchQuery.startsWith('C')) {
+        // need to search everything (gene analysis, heritability estimates, genetic correlation, GWAS and IWAS)
+        matches['GWAS'] = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, { keys: ['IDP'] });
+        matches['IWAS'] = matchSorter(IWAS, searchQuery, { keys: ['IDP'] });
+        matches['geneAnalysis'] = matchSorter(geneAnalysis, searchQuery, { keys: ['IDP'] });
+        matches['geneticCorrelation'] = matchSorter(geneticCorrelation, searchQuery, { keys: ['IDP'] });
+        matches['heritabilityEstimate'] = matchSorter(heritabilityEstimate, searchQuery, { keys: ['IDP'] });
+      } else if (searchQuery.startsWith('rs')) {
+        // only need to search GWAS
+        matches['GWAS'] = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, { keys: ['ID'] });
+      } else if (includesAndStartsWith(searchQuery, clinical_traits)) {
+        // only need to search IWAS
+        matches['IWAS'] = matchSorter(IWAS, searchQuery, { keys: ['trait'] });
+      } else { // presumably a gene symbol
+        // only need to search gene analysis
+        matches['geneAnalysis'] = matchSorter(geneAnalysis, searchQuery, { keys: ['GENE'] });
+      }
+      if (matches['GWAS'].length === 0 && matches['IWAS'].length === 0 && matches['geneAnalysis'].length === 0 && matches['geneticCorrelation'].length === 0) {
+        matches['GWAS'] = atlas > 0 ? GWASByAtlas[atlas] : GWAS
       }
       setSearchResults(matches);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, atlas]);
 
   const animateIn = (c, cb = null) => {
@@ -336,7 +403,13 @@ function App() {
                 }
                 window.render();
                 animateOut();
-                setSearchResults([]);
+                setSearchResults({
+                  'GWAS': [],
+                  'IWAS': [],
+                  'geneticCorrelation': [],
+                  'geneAnalysis': [],
+                  'heritabilityEstimate': [],
+                });
                 setPhenotype('');
                 setAtlas(0);
                 e.target.parentNode.children[1].classList.remove('pl-24');
@@ -350,15 +423,17 @@ function App() {
                 const timeout = setTimeout(() => {
                   setSearchQuery(x.target.value);
                   setTypingTimer(null);
-                }, 900);
+                }, 1000);
                 setTypingTimer(timeout);
               }} />
             </div>
           </div>
         </form>
-        <p className={searchResults.length === 0 && searchQuery.length > 0 ? "col-span-12" : "hidden"}>No results for "{searchQuery}".</p>
+        {/* <p className={searchResults.length === 0 && searchQuery.length > 0 ? "col-span-12" : "hidden"}>No results for "{searchQuery}".</p> */}
         <p className={(atlas > 0 && phenotype.length === 0) ? "text-center col-span-12" : "hidden"}>Search or right-click an IDP to see more info.</p>
-        <div className={searchResults.length > 0 ? "overflow-x-auto overflow-y-auto max-h-80 col-span-12" : "hidden"}>
+        {/* GWAS TABLE */}
+        <div className={searchResults['GWAS'].length > 0 ? "overflow-x-auto overflow-y-auto max-h-80 col-span-" + (((searchResults['GWAS'].length > 0) + (searchResults['IWAS'].length > 0) + (searchResults['geneAnalysis'].length > 0) + (searchResults['geneticCorrelation'].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <h4 className="font-bold text-xl text-center">GWAS</h4>
           <table className="table w-full table-compact">
             <thead>
               <tr>
@@ -369,7 +444,7 @@ function App() {
               </tr>
             </thead>
             <tbody>
-              {searchResults.map((x, i) => (
+              {searchResults['GWAS'].map((x, i) => (
                 <tr key={i} className="hover cursor-pointer" onClick={() => {
                   setPhenotype(x.IDP);
                   setSearchQuery(x.IDP);
@@ -404,6 +479,228 @@ function App() {
                   <td>{x.ID}</td>
                   <td>{x.P}</td>
                   <td>{x.BETA}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {/* IWAS TABLE */}
+        <div className={searchResults['IWAS'].length > 0 ? "overflow-x-auto overflow-y-auto max-h-80 col-span-" + (((searchResults['GWAS'].length > 0) + (searchResults['IWAS'].length > 0) + (searchResults['geneAnalysis'].length > 0) + (searchResults['geneticCorrelation'].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <h4 className="font-bold text-xl text-center">IWAS</h4>
+          <table className="table w-full table-compact">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Trait</th>
+                <th>P-value</th>
+                <th>ES</th>
+              </tr>
+            </thead>
+            <tbody>
+              {searchResults['IWAS'].map((x, i) => (
+                <tr key={i} className="hover cursor-pointer" onClick={() => {
+                  setPhenotype(x.IDP);
+                  setSearchQuery(x.IDP);
+                  backButtonRef.current.parentNode.children[1].value = x.trait; // set the input value to the trait
+                  const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
+                  if (atlas === 0) {
+                    animateIn(x_atlas, () => {
+                      // make actors grayed out
+                      // const actors = renderWindows[i].getRenderers()[0].getActors();
+                      progressRef.current.value = 0;
+                      progressRef.current.dataset.value = 0;
+                      const opacity = []
+                      for (const c in allActors[x_atlas]) {
+                        if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
+                          const actor = allActors[x_atlas][c];
+                          if (actor.name === x.IDP && actor.iwas_traits !== undefined && actor.iwas_traits.includes(x.trait)) {
+                            actor.actor.getProperty().setColor(1, 0, 0);
+                            actor.actor.getProperty().setOpacity(1);
+                          } else {
+                            actor.actor.getProperty().setColor(0.5, 0.5, 0.5);
+                            actor.actor.getProperty().setOpacity(0.2);
+                            opacity.push(actor.actor);
+                          }
+                        }
+                      }
+                      window.render();
+                      setGrayedOut(opacity);
+                    });
+                  }
+                }}>
+                  <td>{x.IDP}</td>
+                  <td>{x.trait}</td>
+                  <td>{x.Pvalue}</td>
+                  <td>{x.ES}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {/* GENETIC CORRELATION TABLE */}
+        <div className={searchResults['geneticCorrelation'].length > 0 ? "overflow-x-auto overflow-y-auto max-h-80 col-span-" + (((searchResults['GWAS'].length > 0) + (searchResults['IWAS'].length > 0) + (searchResults['geneAnalysis'].length > 0) + (searchResults['geneticCorrelation'].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <h4 className="font-bold text-xl text-center">Genetic correlation</h4>
+          <table className="table w-full table-compact">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Trait</th>
+                <th>Mean</th>
+                <th>Std. Dev.</th>
+                <th>P-value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {searchResults['geneticCorrelation'].map((x, i) => (
+                <tr key={i} className="hover cursor-pointer" onClick={() => {
+                  setPhenotype(x.IDP);
+                  setSearchQuery(x.IDP);
+                  backButtonRef.current.parentNode.children[1].value = x.trait; // set the input value to the trait
+                  const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
+                  if (atlas === 0) {
+                    animateIn(x_atlas, () => {
+                      // make actors grayed out
+                      // const actors = renderWindows[i].getRenderers()[0].getActors();
+                      progressRef.current.value = 0;
+                      progressRef.current.dataset.value = 0;
+                      const opacity = []
+                      for (const c in allActors[x_atlas]) {
+                        if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
+                          const actor = allActors[x_atlas][c];
+                          if (actor.name === x.IDP && actor.genetic_correlation_traits !== undefined && actor.genetic_correlation_traits.includes(x.trait)) {
+                            actor.actor.getProperty().setColor(1, 0, 0);
+                            actor.actor.getProperty().setOpacity(1);
+                          } else {
+                            actor.actor.getProperty().setColor(0.5, 0.5, 0.5);
+                            actor.actor.getProperty().setOpacity(0.2);
+                            opacity.push(actor.actor);
+                          }
+                        }
+                      }
+                      window.render();
+                      setGrayedOut(opacity);
+                    });
+                  }
+                }}>
+                  <td>{x.IDP}</td>
+                  <td>{x.trait}</td>
+                  <td>{x.gc_mean}</td>
+                  <td>{x.gc_std}</td>
+                  <td>{x.P}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {/* GENE ANALYSIS TABLE */}
+        <div className={searchResults['geneAnalysis'].length > 0 ? "overflow-x-auto overflow-y-auto max-h-80 col-span-" + (((searchResults['GWAS'].length > 0) + (searchResults['IWAS'].length > 0) + (searchResults['geneAnalysis'].length > 0) + (searchResults['geneticCorrelation'].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <h4 className="font-bold text-xl text-center">Gene analysis</h4>
+          <table className="table w-full table-compact">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Gene</th>
+                <th>Chromosome</th>
+                <th>Start - Stop</th>
+                <th>NSNPS</th>
+                <th>NPARAM</th>
+                <th>N</th>
+                <th>Z Stat</th>
+                <th>P-value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {searchResults['geneAnalysis'].map((x, i) => (
+                <tr key={i} className="hover cursor-pointer" onClick={() => {
+                  setPhenotype(x.IDP);
+                  setSearchQuery(x.IDP);
+                  backButtonRef.current.parentNode.children[1].value = x.GENE; // set the input value to the gene
+                  const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
+                  if (atlas === 0) {
+                    animateIn(x_atlas, () => {
+                      // make actors grayed out
+                      // const actors = renderWindows[i].getRenderers()[0].getActors();
+                      progressRef.current.value = 0;
+                      progressRef.current.dataset.value = 0;
+                      const opacity = []
+                      for (const c in allActors[x_atlas]) {
+                        if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
+                          const actor = allActors[x_atlas][c];
+                          if (actor.name === x.IDP && actor.genes !== undefined && actor.genes.includes(x.GENE)) {
+                            actor.actor.getProperty().setColor(1, 0, 0);
+                            actor.actor.getProperty().setOpacity(1);
+                          } else {
+                            actor.actor.getProperty().setColor(0.5, 0.5, 0.5);
+                            actor.actor.getProperty().setOpacity(0.2);
+                            opacity.push(actor.actor);
+                          }
+                        }
+                      }
+                      window.render();
+                      setGrayedOut(opacity);
+                    });
+                  }
+                }}>
+                  <td>{x.IDP}</td>
+                  <td>{x.GENE}</td>
+                  <td>{x.CHR}</td>
+                  <td>{x.START} - {x.STOP}</td>
+                  <td>{x.NSNPS}</td>
+                  <td>{x.NPARAM}</td>
+                  <td>{x.N}</td>
+                  <td>{x.ZSTAT}</td>
+                  <td>{x.P}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {/* HERITABILITY ESTIMATE TABLE */}
+        <div className={searchResults['heritabilityEstimate'].length > 0 ? "overflow-x-auto overflow-y-auto max-h-80 col-span-" + (((searchResults['GWAS'].length > 0) + (searchResults['IWAS'].length > 0) + (searchResults['geneAnalysis'].length > 0) + (searchResults['geneticCorrelation'].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <h4 className="font-bold text-xl text-center">Heritability estimate</h4>
+          <table className="table w-full table-compact">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Heritability</th>
+                <th>P-value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {searchResults['heritabilityEstimate'].map((x, i) => (
+                <tr key={i} className="hover cursor-pointer" onClick={() => {
+                  setPhenotype(x.IDP);
+                  setSearchQuery(x.IDP);
+                  backButtonRef.current.parentNode.children[1].value = x.IDP; // set the input value to the ID
+                  const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
+                  if (atlas === 0) {
+                    animateIn(x_atlas, () => {
+                      // make actors grayed out
+                      // const actors = renderWindows[i].getRenderers()[0].getActors();
+                      progressRef.current.value = 0;
+                      progressRef.current.dataset.value = 0;
+                      const opacity = []
+                      for (const c in allActors[x_atlas]) {
+                        if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
+                          const actor = allActors[x_atlas][c];
+                          if (actor.name === x.IDP) {
+                            actor.actor.getProperty().setColor(1, 0, 0);
+                            actor.actor.getProperty().setOpacity(1);
+                          } else {
+                            actor.actor.getProperty().setColor(0.5, 0.5, 0.5);
+                            actor.actor.getProperty().setOpacity(0.2);
+                            opacity.push(actor.actor);
+                          }
+                        }
+                      }
+                      window.render();
+                      setGrayedOut(opacity);
+                    });
+                  }
+                }}>
+                  <td>{x.IDP}</td>
+                  <td>{x.Heritability}</td>
+                  <td>{x.Pvalue}</td>
                 </tr>
               ))}
             </tbody>
