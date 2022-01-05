@@ -17,7 +17,7 @@ df.sort_values(by=["P"], inplace=True)
 df.to_json("genetic_correlation.json", orient="records")
 
 df = pd.read_csv("Heritability_estimate/bridgeport_heritability_estimate.tsv", sep="\t")
-df.sort_values(by=["Pvalue"], inplace=True)
+df.sort_values(by=["Heritability"], inplace=True)
 df.to_json("heritability_estimate.json", orient="records")
 
 df = pd.read_csv("IWAS/bridgeport_iwas.tsv", sep="\t")

@@ -260,11 +260,21 @@ function App() {
     } else {
       if (searchQuery.startsWith('C')) {
         // need to search everything (gene analysis, heritability estimates, genetic correlation, GWAS and IWAS)
-        matches['GWAS'] = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, { keys: ['IDP'] });
-        matches['IWAS'] = matchSorter(IWAS, searchQuery, { keys: ['IDP'] });
-        matches['geneAnalysis'] = matchSorter(geneAnalysis, searchQuery, { keys: ['IDP'] });
-        matches['geneticCorrelation'] = matchSorter(geneticCorrelation, searchQuery, { keys: ['IDP'] });
-        matches['heritabilityEstimate'] = matchSorter(heritabilityEstimate, searchQuery, { keys: ['IDP'] });
+        matches['GWAS'] = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, {
+          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }]
+        });
+        matches['IWAS'] = matchSorter(IWAS, searchQuery, {
+          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }]
+        });
+        matches['geneAnalysis'] = matchSorter(geneAnalysis, searchQuery, {
+          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }]
+        });
+        matches['geneticCorrelation'] = matchSorter(geneticCorrelation, searchQuery, {
+          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }]
+        });
+        matches['heritabilityEstimate'] = matchSorter(heritabilityEstimate, searchQuery, {
+          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }]
+        });
       } else if (searchQuery.startsWith('rs')) {
         // only need to search GWAS
         matches['GWAS'] = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, { keys: ['ID'] });
@@ -461,7 +471,7 @@ function App() {
                 <tr key={i} className="hover cursor-pointer" onClick={() => {
                   setPhenotype(x.IDP);
                   setSearchQuery(x.IDP);
-                  backButtonRef.current.parentNode.children[1].value = x.ID; // set the input value to the ID
+                  backButtonRef.current.parentNode.children[1].value = x.IDP; // set the input value to the IDP
                   const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
                   if (atlas === 0) {
                     animateIn(x_atlas, () => {
@@ -512,7 +522,7 @@ function App() {
                 <tr key={i} className="hover cursor-pointer" onClick={() => {
                   setPhenotype(x.IDP);
                   setSearchQuery(x.IDP);
-                  backButtonRef.current.parentNode.children[1].value = x.trait; // set the input value to the trait
+                  backButtonRef.current.parentNode.children[1].value = x.IDP; // set the input value to the IDP
                   const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
                   if (atlas === 0) {
                     animateIn(x_atlas, () => {
@@ -564,7 +574,7 @@ function App() {
                 <tr key={i} className="hover cursor-pointer" onClick={() => {
                   setPhenotype(x.IDP);
                   setSearchQuery(x.IDP);
-                  backButtonRef.current.parentNode.children[1].value = x.trait; // set the input value to the trait
+                  backButtonRef.current.parentNode.children[1].value = x.IDP; // set the input value to the IDP
                   const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
                   if (atlas === 0) {
                     animateIn(x_atlas, () => {
@@ -621,7 +631,7 @@ function App() {
                 <tr key={i} className="hover cursor-pointer" onClick={() => {
                   setPhenotype(x.IDP);
                   setSearchQuery(x.IDP);
-                  backButtonRef.current.parentNode.children[1].value = x.GENE; // set the input value to the gene
+                  backButtonRef.current.parentNode.children[1].value = x.IDP; // set the input value to the IDP
                   const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
                   if (atlas === 0) {
                     animateIn(x_atlas, () => {
