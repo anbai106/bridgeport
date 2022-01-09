@@ -297,7 +297,7 @@ function App() {
       if (searchQuery.startsWith('C')) {
         // need to search everything (gene analysis, heritability estimates, genetic correlation, GWAS and IWAS)
         matches['GWAS'] = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP'}],
+          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
               return parseFloat(b.item.P) - parseFloat(a.item.P)
@@ -313,7 +313,7 @@ function App() {
           }
         });
         matches['geneAnalysis'] = matchSorter(geneAnalysis, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP'}],
+          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
               return parseFloat(b.item.P) - parseFloat(a.item.P)
@@ -321,7 +321,7 @@ function App() {
           }
         });
         matches['geneticCorrelation'] = matchSorter(geneticCorrelation, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP'}],
+          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
               return parseFloat(b.item.P) - parseFloat(a.item.P)
@@ -329,7 +329,7 @@ function App() {
           }
         });
         matches['heritabilityEstimate'] = matchSorter(heritabilityEstimate, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP'}],
+          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
               return parseFloat(b.item.Heritability) - parseFloat(a.item.Heritability)
@@ -338,13 +338,34 @@ function App() {
         });
       } else if (searchQuery.startsWith('rs')) {
         // only need to search GWAS
-        matches['GWAS'] = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, { keys: ['ID'] });
+        matches['GWAS'] = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, {
+          keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'ID' }],
+          sorter: rankedItems => {
+            return rankedItems.sort((a, b) => {
+              return parseFloat(b.item.P) - parseFloat(a.item.P)
+            })
+          }
+        });
       } else if (includesAndStartsWith(searchQuery, clinical_traits)) {
         // only need to search IWAS
-        matches['IWAS'] = matchSorter(IWAS, searchQuery, { keys: ['trait'] });
+        matches['IWAS'] = matchSorter(IWAS, searchQuery, {
+          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'trait' }],
+          sorter: rankedItems => {
+            return rankedItems.sort((a, b) => {
+              return parseFloat(b.item.Pvalue) - parseFloat(a.item.Pvalue)
+            })
+          }
+        });
       } else { // presumably a gene symbol
         // only need to search gene analysis
-        matches['geneAnalysis'] = matchSorter(geneAnalysis, searchQuery, { keys: ['GENE'] });
+        matches['geneAnalysis'] = matchSorter(geneAnalysis, searchQuery, {
+          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'GENE' }],
+          sorter: rankedItems => {
+            return rankedItems.sort((a, b) => {
+              return parseFloat(b.item.P) - parseFloat(a.item.P)
+            })
+          }
+        });
       }
       if (matches['GWAS'].length === 0 && matches['IWAS'].length === 0 && matches['geneAnalysis'].length === 0 && matches['geneticCorrelation'].length === 0) {
         matches['GWAS'] = atlas > 0 ? GWASByAtlas[atlas] : GWAS
