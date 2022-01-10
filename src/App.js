@@ -91,6 +91,7 @@ function App() {
     'geneAnalysis': [[]],
     'heritabilityEstimate': [[]],
   });
+  window.searchResults = searchResults;
   const [atlas, setAtlas] = useState(0);
   const [phenotype, setPhenotype] = useState('');
   const [grayedOut, setGrayedOut] = useState([]);
@@ -540,7 +541,7 @@ function App() {
         {/* GWAS TABLE */}
         <div className={searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
           <h4 className="font-bold text-xl inline">GWAS</h4>
-          <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults['GWAS'].flat().length} results</div>
+          <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults['GWAS'].flat(Infinity).length} results</div>
           <div className="inline btn-group float-right">
             <button className={"btn btn-xs" + (pagination.GWAS === 0 ? ' btn-disabled' : '')} onClick={(e) => {
               setPagination({
@@ -555,17 +556,19 @@ function App() {
                 const sibling = siblings[i];
                 if (sibling.classList.contains('btn-active')) {
                   sibling.classList.remove('btn-active')
-                  siblings[i - 1].classList.add('btn-active')
+                  if (i > 0) {
+                    siblings[i - 1].classList.add('btn-active')
+                  }
                   break;
                 }
               }
               e.target.classList.add('btn-active')
             }}>«</button>
-            {[...Array(searchResults['GWAS'].length).keys()].map(x => (
+            {[...Array(Math.min(searchResults['GWAS'].length, 4)).keys()].map(x => (
               <button className={"btn btn-xs" + (x === 0 ? " btn-active" : '')} onClick={(e) => {
                 setPagination({
                   IWAS: pagination.IWAS,
-                  GWAS: x,
+                  GWAS: x + (pagination.GWAS - Math.min(pagination.GWAS, 3)),
                   geneticCorrelation: pagination.geneticCorrelation,
                   geneAnalysis: pagination.geneAnalysis,
                   heritabilityEstimate: pagination.heritabilityEstimate,
@@ -579,7 +582,7 @@ function App() {
                   }
                 }
                 e.target.classList.add('btn-active')
-              }} key={x}>{x + 1}</button>
+              }} key={x}>{x + 1 + (pagination.GWAS - Math.min(pagination.GWAS, 3))}</button>
             ))}
             <button className={"btn btn-xs" + (pagination.GWAS === searchResults['GWAS'].length - 1 ? ' btn-disabled' : '')} onClick={(e) => {
               setPagination({
@@ -594,7 +597,9 @@ function App() {
                 const sibling = siblings[i];
                 if (sibling.classList.contains('btn-active')) {
                   sibling.classList.remove('btn-active')
-                  siblings[i + 1].classList.add('btn-active')
+                  if (i !== siblings.length - 1) {
+                    siblings[i + 1].classList.add('btn-active')
+                  }
                   break;
                 }
               }
@@ -652,7 +657,7 @@ function App() {
         {/* IWAS TABLE */}
         <div className={searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
           <h4 className="font-bold text-xl inline">IWAS</h4>
-          <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults['IWAS'].flat().length} results</div>
+          <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults['IWAS'].flat(Infinity).length} results</div>
           <div className="inline btn-group float-right">
             <button className={"btn btn-xs" + (pagination.IWAS === 0 ? ' btn-disabled' : '')} onClick={(e) => {
               setPagination({
@@ -667,17 +672,19 @@ function App() {
                 const sibling = siblings[i];
                 if (sibling.classList.contains('btn-active')) {
                   sibling.classList.remove('btn-active')
-                  siblings[i - 1].classList.add('btn-active')
+                  if (i > 0) {
+                    siblings[i - 1].classList.add('btn-active')
+                  }
                   break;
                 }
               }
               e.target.classList.add('btn-active')
             }}>«</button>
-            {[...Array(searchResults['IWAS'].length).keys()].map(x => (
+            {[...Array(Math.min(searchResults['IWAS'].length, 4)).keys()].map(x => (
               <button className={"btn btn-xs" + (x === 0 ? " btn-active" : '')} onClick={(e) => {
                 setPagination({
                   GWAS: pagination.GWAS,
-                  IWAS: x,
+                  IWAS: x + (pagination.IWAS - Math.min(pagination.IWAS, 3)),
                   geneticCorrelation: pagination.geneticCorrelation,
                   geneAnalysis: pagination.geneAnalysis,
                   heritabilityEstimate: pagination.heritabilityEstimate,
@@ -691,7 +698,7 @@ function App() {
                   }
                 }
                 e.target.classList.add('btn-active')
-              }} key={x}>{x + 1}</button>
+              }} key={x}>{x + 1 + (pagination.IWAS - Math.min(pagination.IWAS, 3))}</button>
             ))}
             <button className={"btn btn-xs" + (pagination.IWAS === searchResults['IWAS'].length - 1 ? ' btn-disabled' : '')} onClick={(e) => {
               setPagination({
@@ -706,7 +713,9 @@ function App() {
                 const sibling = siblings[i];
                 if (sibling.classList.contains('btn-active')) {
                   sibling.classList.remove('btn-active')
-                  siblings[i + 1].classList.add('btn-active')
+                  if (i !== siblings.length - 1) {
+                    siblings[i + 1].classList.add('btn-active')
+                  }
                   break;
                 }
               }
@@ -764,7 +773,7 @@ function App() {
         {/* GENETIC CORRELATION TABLE */}
         <div className={searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
           <h4 className="font-bold text-xl inline">Genetic correlation</h4>
-          <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults['geneticCorrelation'].flat().length} results</div>
+          <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults['geneticCorrelation'].flat(Infinity).length} results</div>
           <div className="inline btn-group float-right">
             <button className={"btn btn-xs" + (pagination.geneticCorrelation === 0 ? ' btn-disabled' : '')} onClick={(e) => {
               setPagination({
@@ -779,17 +788,19 @@ function App() {
                 const sibling = siblings[i];
                 if (sibling.classList.contains('btn-active')) {
                   sibling.classList.remove('btn-active')
-                  siblings[i - 1].classList.add('btn-active')
+                  if (i > 0) {
+                    siblings[i - 1].classList.add('btn-active')
+                  }
                   break;
                 }
               }
               e.target.classList.add('btn-active')
             }}>«</button>
-            {[...Array(searchResults['geneticCorrelation'].length).keys()].map(x => (
+            {[...Array(Math.min(searchResults['geneticCorrelation'].length, 4)).keys()].map(x => (
               <button className={"btn btn-xs" + (x === 0 ? " btn-active" : '')} onClick={(e) => {
                 setPagination({
                   GWAS: pagination.GWAS,
-                  geneticCorrelation: x,
+                  geneticCorrelation: x + (pagination.geneticCorrelation - Math.min(pagination.geneticCorrelation, 3)),
                   IWAS: pagination.IWAS,
                   geneAnalysis: pagination.geneAnalysis,
                   heritabilityEstimate: pagination.heritabilityEstimate,
@@ -803,7 +814,7 @@ function App() {
                   }
                 }
                 e.target.classList.add('btn-active')
-              }} key={x}>{x + 1}</button>
+              }} key={x}>{x + 1 + (pagination.geneticCorrelation - Math.min(pagination.geneticCorrelation, 3))}</button>
             ))}
             <button className={"btn btn-xs" + (pagination.geneticCorrelation === searchResults['geneticCorrelation'].length - 1 ? ' btn-disabled' : '')} onClick={(e) => {
               setPagination({
@@ -818,7 +829,9 @@ function App() {
                 const sibling = siblings[i];
                 if (sibling.classList.contains('btn-active')) {
                   sibling.classList.remove('btn-active')
-                  siblings[i + 1].classList.add('btn-active')
+                  if (i !== siblings.length - 1) {
+                    siblings[i + 1].classList.add('btn-active')
+                  }
                   break;
                 }
               }
@@ -878,7 +891,7 @@ function App() {
         {/* GENE ANALYSIS TABLE */}
         <div className={searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
           <h4 className="font-bold text-xl inline">Gene analysis</h4>
-          <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults['geneAnalysis'].flat().length} results</div>
+          <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults['geneAnalysis'].flat(Infinity).length} results</div>
           <div className="inline btn-group float-right">
             <button className={"btn btn-xs" + (pagination.geneAnalysis === 0 ? ' btn-disabled' : '')} onClick={(e) => {
               setPagination({
@@ -893,17 +906,19 @@ function App() {
                 const sibling = siblings[i];
                 if (sibling.classList.contains('btn-active')) {
                   sibling.classList.remove('btn-active')
-                  siblings[i - 1].classList.add('btn-active')
+                  if (i > 0) {
+                    siblings[i - 1].classList.add('btn-active')
+                  }
                   break;
                 }
               }
               e.target.classList.add('btn-active')
             }}>«</button>
-            {[...Array(searchResults['geneAnalysis'].length).keys()].map(x => (
+            {[...Array(Math.min(searchResults['geneAnalysis'].length, 4)).keys()].map(x => (
               <button className={"btn btn-xs" + (x === 0 ? " btn-active" : '')} onClick={(e) => {
                 setPagination({
                   GWAS: pagination.GWAS,
-                  geneAnalysis: x,
+                  geneAnalysis: x + (pagination.geneAnalysis - Math.min(pagination.geneAnalysis, 3)),
                   geneticCorrelation: pagination.geneticCorrelation,
                   IWAS: pagination.IWAS,
                   heritabilityEstimate: pagination.heritabilityEstimate,
@@ -917,7 +932,7 @@ function App() {
                   }
                 }
                 e.target.classList.add('btn-active')
-              }} key={x}>{x + 1}</button>
+              }} key={x}>{x + 1 + (pagination.geneAnalysis - Math.min(pagination.geneAnalysis, 3))}</button>
             ))}
             <button className={"btn btn-xs" + (pagination.geneAnalysis === searchResults['geneAnalysis'].length - 1 ? ' btn-disabled' : '')} onClick={(e) => {
               setPagination({
@@ -932,7 +947,9 @@ function App() {
                 const sibling = siblings[i];
                 if (sibling.classList.contains('btn-active')) {
                   sibling.classList.remove('btn-active')
-                  siblings[i + 1].classList.add('btn-active')
+                  if (i !== siblings.length - 1) {
+                    siblings[i + 1].classList.add('btn-active')
+                  }
                   break;
                 }
               }
@@ -1000,7 +1017,7 @@ function App() {
         {/* HERITABILITY ESTIMATE TABLE */}
         <div className={searchResults['heritabilityEstimate'][0] !== undefined && searchResults['heritabilityEstimate'][0].length > 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
           <h4 className="font-bold text-xl inline">Heritability estimate</h4>
-          <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults['heritabilityEstimate'].flat().length} results</div>
+          <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults['heritabilityEstimate'].flat(Infinity).length} results</div>
           <div className="inline btn-group float-right">
             <button className={"btn btn-xs" + (pagination.heritabilityEstimate === 0 ? ' btn-disabled' : '')} onClick={(e) => {
               setPagination({
@@ -1015,17 +1032,19 @@ function App() {
                 const sibling = siblings[i];
                 if (sibling.classList.contains('btn-active')) {
                   sibling.classList.remove('btn-active')
-                  siblings[i - 1].classList.add('btn-active')
+                  if (i > 0) {
+                    siblings[i - 1].classList.add('btn-active')
+                  }
                   break;
                 }
               }
               e.target.classList.add('btn-active')
             }}>«</button>
-            {[...Array(searchResults['heritabilityEstimate'].length).keys()].map(x => (
+            {[...Array(Math.min(searchResults['heritabilityEstimate'].length, 4)).keys()].map(x => (
               <button className={"btn btn-xs" + (x === 0 ? " btn-active" : '')} onClick={(e) => {
                 setPagination({
                   GWAS: pagination.GWAS,
-                  heritabilityEstimate: x,
+                  heritabilityEstimate: x + (pagination.heritabilityEstimate - Math.min(pagination.heritabilityEstimate, 3)),
                   geneticCorrelation: pagination.geneticCorrelation,
                   geneAnalysis: pagination.geneAnalysis,
                   IWAS: pagination.IWAS,
@@ -1039,7 +1058,7 @@ function App() {
                   }
                 }
                 e.target.classList.add('btn-active')
-              }} key={x}>{x + 1}</button>
+              }} key={x}>{x + 1 + (pagination.heritabilityEstimate - Math.min(pagination.heritabilityEstimate, 3))}</button>
             ))}
             <button className={"btn btn-xs" + (pagination.heritabilityEstimate === searchResults['heritabilityEstimate'].length - 1 ? ' btn-disabled' : '')} onClick={(e) => {
               setPagination({
@@ -1054,7 +1073,9 @@ function App() {
                 const sibling = siblings[i];
                 if (sibling.classList.contains('btn-active')) {
                   sibling.classList.remove('btn-active')
-                  siblings[i + 1].classList.add('btn-active')
+                  if (i !== siblings.length - 1) {
+                    siblings[i + 1].classList.add('btn-active')
+                  }
                   break;
                 }
               }
