@@ -22,14 +22,39 @@ import geneticCorrelation from './data/genetic_correlation.json';
 import geneAnalysis from './data/gene_analysis.json';
 
 // organize data for later
-const GWASByIDP = GWAS.reduce((acc, curr) => {
-  if (!(curr.IDP in acc)) {
-    acc[curr.IDP] = [];
+const GWASByAtlas = GWAS.reduce((acc, curr) => {
+  const atlas = curr.IDP.substring(1, curr.IDP.indexOf('_'));
+  if (!(atlas in acc)) {
+    acc[atlas] = [];
   }
-  acc[curr.IDP].push(curr.ID);
+  acc[atlas].push(curr);
   return acc;
 }, {});
-const GWASByAtlas = GWAS.reduce((acc, curr) => {
+const IWASByAtlas = IWAS.reduce((acc, curr) => {
+  const atlas = curr.IDP.substring(1, curr.IDP.indexOf('_'));
+  if (!(atlas in acc)) {
+    acc[atlas] = [];
+  }
+  acc[atlas].push(curr);
+  return acc;
+}, {});
+const geneAnalysisByAtlas = geneAnalysis.reduce((acc, curr) => {
+  const atlas = curr.IDP.substring(1, curr.IDP.indexOf('_'));
+  if (!(atlas in acc)) {
+    acc[atlas] = [];
+  }
+  acc[atlas].push(curr);
+  return acc;
+}, {});
+const geneticCorrelationByAtlas = geneticCorrelation.reduce((acc, curr) => {
+  const atlas = curr.IDP.substring(1, curr.IDP.indexOf('_'));
+  if (!(atlas in acc)) {
+    acc[atlas] = [];
+  }
+  acc[atlas].push(curr);
+  return acc;
+}, {});
+const heritabilityEstimateByAtlas = heritabilityEstimate.reduce((acc, curr) => {
   const atlas = curr.IDP.substring(1, curr.IDP.indexOf('_'));
   if (!(atlas in acc)) {
     acc[atlas] = [];
@@ -72,7 +97,6 @@ function App() {
   });
   const [atlas, setAtlas] = useState(0);
   const [phenotype, setPhenotype] = useState('');
-  const [grayedOut, setGrayedOut] = useState([]);
   const [typingTimer, setTypingTimer] = useState(null);
   const [chartType, setChartType] = useState('manhattan'); // or 'qq'
   const [pagination, setPagination] = useState({
@@ -82,8 +106,6 @@ function App() {
     geneAnalysis: 0,
     heritabilityEstimate: 0,
   });
-  window.pagination = pagination;
-  window.setPagination = setPagination;
   const paginateResults = (results, perPage) => {
     const paginatedResults = {
       // double arrays for pagination
@@ -128,6 +150,7 @@ function App() {
     const renderer = genericRenderer.getRenderer();
     const renderWindow = genericRenderer.getRenderWindow();
     renderer.setBackground(1, 1, 1);
+    window.renderWindow = renderWindow;
 
     const resetCamera = renderer.resetCamera;
     const render = renderWindow.render;
@@ -168,7 +191,7 @@ function App() {
         // any value that's unique (and referenceable outside of this function) will do
         const id = mapper.getInputData().getNumberOfCells();
         let tmp = allActors;
-        tmp[c][id] = { name: `C${c}_${i}`, ids: GWASByIDP[`C${c}_${i}`], actor: actor };
+        tmp[c][id] = { name: `C${c}_${i}`, actor: actor };
         setAllActors(tmp);
 
         resetCamera();
@@ -229,14 +252,11 @@ function App() {
 
       // get list of actors, set opacity to 0.5
       const actors = renderer.getActors();
-      const opacity = [];
       for (let i = 0; i < actors.length; i++) {
         const actor = actors[i];
         actor.getProperty().setColor(0.5, 0.5, 0.5);
         actor.getProperty().setOpacity(0.2);
-        opacity.push(actor);
       }
-      setGrayedOut(opacity);
 
       sortedByDim[0].getProperty().setColor(255 / 255, 0 / 255, 0 / 255);
       sortedByDim[0].getProperty().setOpacity(1);
@@ -283,7 +303,7 @@ function App() {
             });
           }
         });
-        matches['IWAS'] = matchSorter(IWAS, searchQuery, {
+        matches['IWAS'] = matchSorter(atlas > 0 ? IWASByAtlas[atlas] : IWAS, searchQuery, {
           keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
@@ -291,7 +311,7 @@ function App() {
             });
           }
         });
-        matches['geneAnalysis'] = matchSorter(geneAnalysis, searchQuery, {
+        matches['geneAnalysis'] = matchSorter(atlas > 0 ? geneAnalysisByAtlas[atlas] : geneAnalysis, searchQuery, {
           keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
@@ -299,7 +319,7 @@ function App() {
             });
           }
         });
-        matches['geneticCorrelation'] = matchSorter(geneticCorrelation, searchQuery, {
+        matches['geneticCorrelation'] = matchSorter(atlas > 0 ? geneticCorrelationByAtlas[atlas] : geneticCorrelation, searchQuery, {
           keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
@@ -307,7 +327,7 @@ function App() {
             });
           }
         });
-        matches['heritabilityEstimate'] = matchSorter(heritabilityEstimate, searchQuery, {
+        matches['heritabilityEstimate'] = matchSorter(atlas > 0 ? heritabilityEstimateByAtlas[atlas] : heritabilityEstimate, searchQuery, {
           keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
@@ -327,7 +347,7 @@ function App() {
         });
       } else if (includesAndStartsWith(searchQuery, clinical_traits)) {
         // only need to search IWAS
-        matches['IWAS'] = matchSorter(IWAS, searchQuery, {
+        matches['IWAS'] = matchSorter(atlas > 0 ? IWASByAtlas[atlas] : IWAS, searchQuery, {
           keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'trait' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
@@ -337,7 +357,7 @@ function App() {
         });
       } else { // presumably a gene symbol
         // only need to search gene analysis
-        matches['geneAnalysis'] = matchSorter(geneAnalysis, searchQuery, {
+        matches['geneAnalysis'] = matchSorter(atlas > 0 ? geneAnalysisByAtlas[atlas] : geneAnalysis, searchQuery, {
           keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'GENE' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
@@ -462,8 +482,9 @@ function App() {
           )
         }))}
         <p className={phenotype.length > 0 ? "col-span-12 text-right" : "hidden"}><button className="btn btn-link btn-sm" onClick={() => {
-          for (let i = 0; i < grayedOut.length; i++) {
-            const disabled = grayedOut[i];
+          const actors = window.renderWindow.getRenderers()[0].getActors();
+          for (let i = 0; i < actors.length; i++) {
+            const disabled = actors[i];
             disabled.getProperty().setOpacity(1);
             const h1 = parseInt(md5(`C${atlas}_${i}_r`), 16) / max_hash;
             const h2 = parseInt(md5(`C${atlas}_${i}_g`), 16) / max_hash;
@@ -477,8 +498,9 @@ function App() {
           <div className="form-control my-2">
             <div className="relative">
               <button className="absolute top-0 left-0 rounded-r-none btn btn-primary hidden" ref={backButtonRef} onClick={(e) => {
-                for (let i = 0; i < grayedOut.length; i++) {
-                  const disabled = grayedOut[i];
+                const actors = window.renderWindow.getRenderers()[0].getActors();
+                for (let i = 0; i < actors.length; i++) {
+                  const disabled = actors[i];
                   disabled.getProperty().setOpacity(1);
                   const h1 = parseInt(md5(`C${atlas}_${i}_r`), 16) / max_hash;
                   const h2 = parseInt(md5(`C${atlas}_${i}_g`), 16) / max_hash;
@@ -518,7 +540,7 @@ function App() {
         <p className={(atlas > 0 && phenotype.length === 0) ? "text-center col-span-12" : "hidden"}>Search or right-click an IDP to see more info.</p>
 
         {Object.keys(pagination).map(table => (
-          <div className={searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <div className={searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden z-10 bg-white max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
             <h4 className="font-bold text-xl inline">{table}</h4>
             <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>
             <div className="inline btn-group float-right">
@@ -579,7 +601,7 @@ function App() {
                   switch (table) {
                     case 'GWAS':
                       setPagination({
-                        // offset + current_page then subtract min(current_page, 2) to show for prev pages
+                        // offset + current_page then subtract min(current_page, 2) to show prev pages
                         GWAS: x + pagination.GWAS - Math.min(pagination.GWAS, 2),
                         IWAS: pagination.IWAS,
                         geneticCorrelation: pagination.geneticCorrelation,
@@ -698,27 +720,29 @@ function App() {
                     setSearchQuery(x.IDP);
                     backButtonRef.current.parentNode.children[1].value = x.IDP; // set the input value to the IDP
                     const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
-                    if (atlas === 0) {
-                      animateIn(x_atlas, () => {
-                        // make actors grayed out
-                        // const actors = renderWindows[i].getRenderers()[0].getActors();
-                        const opacity = []
-                        for (const c in allActors[x_atlas]) {
-                          if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
-                            const actor = allActors[x_atlas][c];
-                            if (actor.name === x.IDP && actor.ids !== undefined && actor.ids.includes(x.ID)) {
-                              actor.actor.getProperty().setColor(1, 0, 0);
-                              actor.actor.getProperty().setOpacity(1);
-                            } else {
-                              actor.actor.getProperty().setColor(0.5, 0.5, 0.5);
-                              actor.actor.getProperty().setOpacity(0.2);
-                              opacity.push(actor.actor);
-                            }
+                    const greyOut = () => { // make actors grayed out
+                      const actors = window.renderWindow.getRenderers()[0].getActors();
+                      for (let i = 0; i < actors.length; i++) {
+                        const actor = actors[i]
+                        actor.getProperty().setColor(0.5, 0.5, 0.5);
+                        actor.getProperty().setOpacity(0.2);
+                      }
+                      for (const c in allActors[x_atlas]) {
+                        if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
+                          const actor = allActors[x_atlas][c];
+                          if (actor.name === x.IDP) {
+                            actor.actor.getProperty().setColor(1, 0, 0);
+                            actor.actor.getProperty().setOpacity(1);
+                            break;
                           }
                         }
-                        window.render();
-                        setGrayedOut(opacity);
-                      });
+                      }
+                      window.render();
+                    }
+                    if (atlas === 0) {
+                      animateIn(x_atlas, greyOut);
+                    } else {
+                      greyOut();
                     }
                   }
                   switch (table) {
