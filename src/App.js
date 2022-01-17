@@ -195,7 +195,7 @@ function App() {
         setAllActors(tmp);
 
         resetCamera();
-        // renderer.getActiveCamera().zoom(1.25);
+        renderer.getActiveCamera().zoom(0.8);
         // let orientation = actor.getOrientation()
         // actor.setOrientation(orientation[0] + 20, orientation[1] + 25, 0);
         // actor.setOrientation(orientation[0], previewRotation, 0);
@@ -419,136 +419,189 @@ function App() {
   }
 
   return (
-    <div>
 
-      <div className="grid grid-cols-12 gap-1 px-24">
-        <div className="col-span-12 py-4 z-10">
-          <ul className={(window.innerWidth > 640 ? 'horizontal ' : '') + "menu items-stretch px-3 shadow-lg bg-base-100 w-full sm:w-auto rounded-box float-right"}>
-            <li className="bordered">
-              <a href="/">
-                BRIDGEPORT
-              </a>
-            </li>
-            <li>
-              {/* could be changed to <a> */}
-              <span>About</span>
-            </li>
-            <li>
-              <span>IWAS</span>
-            </li>
-            <li>
-              <span>GWAS</span>
-            </li>
-            <li>
-              <span>Download</span>
-            </li>
-            <li>
-              <span>Software</span>
-            </li>
-            <li>
-              <span>Publication</span>
-            </li>
-            <li>
-              <span>iStaging</span>
-            </li>
-          </ul>
+    <div className="grid grid-cols-12 auto-rows-max gap-1 px-24 h-full">
+      <div className="col-span-12 py-4 z-10">
+        <ul className={(window.innerWidth > 640 ? 'horizontal ' : '') + "menu items-stretch px-3 shadow-lg bg-base-100 w-full sm:w-auto rounded-box float-right"}>
+          <li className="bordered">
+            <a href="/">
+              BRIDGEPORT
+            </a>
+          </li>
+          <li>
+            {/* could be changed to <a> */}
+            <span>About</span>
+          </li>
+          <li>
+            <span>IWAS</span>
+          </li>
+          <li>
+            <span>GWAS</span>
+          </li>
+          <li>
+            <span>Download</span>
+          </li>
+          <li>
+            <span>Software</span>
+          </li>
+          <li>
+            <span>Publication</span>
+          </li>
+          <li>
+            <span>iStaging</span>
+          </li>
+        </ul>
+      </div>
+      <h1 className="col-span-12 text-3xl font-bold z-10">BRIDGEPORT: Bridge knowledge across brain imaging, genomics, cognition and pathology</h1>
+      <h4 className="col-span-12 text-lg z-10">Browse IWAS, GWAS, and gene-level associations for imaging, cognitive, pathological and clinical traits</h4>
+      {/* data-value is the number of actors loaded, value is the % */}
+      {/* eslint-disable-next-line eqeqeq */}
+      <progress className="hidden" style={{ marginBottom: '70vh' }} data-value="0" value="0" min="0" max="100" ref={progressRef}></progress>
+      <div className={phenotype.length > 0 ? "col-span-8 z-10 relative" : "hidden"}>
+        <div className="tabs">
+          <button onClick={x => setChartType('manhattan')} className={chartType === 'manhattan' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>Manhattan</button>
+          <button onClick={x => setChartType('qq')} className={chartType === 'qq' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>QQ</button>
         </div>
-        <h1 className="col-span-12 text-4xl font-bold z-10">BRIDGEPORT: Bridge knowledge across brain imaging, genomics, cognition and pathology</h1>
-        <h4 className="col-span-12 text-xl z-10">Browse IWAS, GWAS, and gene-level associations for imaging, cognitive, pathological and clinical traits</h4>
-        {/* data-value is the number of actors loaded, value is the % */}
-        {/* eslint-disable-next-line eqeqeq */}
-        <progress className="hidden" style={{ marginBottom: '70vh' }} data-value="0" value="0" min="0" max="100" ref={progressRef}></progress>
-        <div className={phenotype.length > 0 ? "col-span-8 z-10 relative" : "hidden"}>
-          <div className="tabs">
-            <button onClick={x => setChartType('manhattan')} className={chartType === 'manhattan' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>Manhattan</button>
-            <button onClick={x => setChartType('qq')} className={chartType === 'qq' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>QQ</button>
-          </div>
-          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`/data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} />
-          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`/data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
+        <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`/data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} />
+        <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`/data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
+      </div>
+      <div className={atlas > 0 ? (phenotype.length === 0 ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh'}}>
+        <div style={phenotype.length === 0 ? {bottom: 'calc(30vw - 100px)'} : {}} className="-z-40 h-full relative">
+          <div className={atlas > 0 && phenotype.length === 0 ? "-z-30 animate__animated animate__bounceInDown" : "max-w-lg -z-30 animate__animated animate__bounceInLeft"} ref={vtkContainerRef} />
         </div>
-        <div className={atlas > 0 ? (phenotype.length === 0 ? "col-span-12 -z-50" : "col-span-4") : "hidden"}>
-          <div style={phenotype.length === 0 ? { maxHeight: '70vh', position: 'relative', bottom: '30vh' } : {}} className="-z-40">
-            <div className={atlas > 0 && phenotype.length === 0 ? "-z-30 animate__animated animate__bounceInDown" : "max-w-lg -z-30 animate__animated animate__bounceInLeft"} ref={vtkContainerRef} />
+      </div>
+      {Object.keys(vtkPreviews).map((c => {
+        return (
+          <div className="col-span-12 sm:col-span-2" ref={vtkPreviews[c]} key={c}>
+            <img src={`/data/static/gifs/C${c}.gif`} className="w-full animate__animated animate__bounceInDown" alt={"C" + c} />
+            <button className="btn btn-primary btn-block btn-sm" onClick={(e) => {
+              animateIn(c);
+            }}>3D View C{c}</button>
+          </div>
+        )
+      }))}
+      <p className={phenotype.length > 0 ? "col-span-12 text-right" : "hidden"}><button className="btn btn-link btn-sm" onClick={() => {
+        const actors = window.renderWindow.getRenderers()[0].getActors();
+        for (let i = 0; i < actors.length; i++) {
+          const disabled = actors[i];
+          disabled.getProperty().setOpacity(1);
+          const h1 = parseInt(md5(`C${atlas}_${i}_r`), 16) / max_hash;
+          const h2 = parseInt(md5(`C${atlas}_${i}_g`), 16) / max_hash;
+          const h3 = parseInt(md5(`C${atlas}_${i}_b`), 16) / max_hash;
+          disabled.getProperty().setColor(h1, h2, h3);
+        }
+        setPhenotype('');
+        window.render();
+      }}>Reset selection</button>.</p>
+      <form className="col-span-12">
+        <div className="form-control my-2">
+          <div className="relative">
+            <button className="absolute top-0 left-0 rounded-r-none btn btn-primary hidden" ref={backButtonRef} onClick={(e) => {
+              const actors = window.renderWindow.getRenderers()[0].getActors();
+              for (let i = 0; i < actors.length; i++) {
+                const disabled = actors[i];
+                disabled.getProperty().setOpacity(1);
+                const h1 = parseInt(md5(`C${atlas}_${i}_r`), 16) / max_hash;
+                const h2 = parseInt(md5(`C${atlas}_${i}_g`), 16) / max_hash;
+                const h3 = parseInt(md5(`C${atlas}_${i}_b`), 16) / max_hash;
+                disabled.getProperty().setColor(h1, h2, h3);
+              }
+              window.render();
+              animateOut();
+              setSearchResults({
+                'GWAS': [[]],
+                'IWAS': [[]],
+                'geneticCorrelation': [[]],
+                'geneAnalysis': [[]],
+                'heritabilityEstimate': [[]],
+              });
+              setPhenotype('');
+              setAtlas(0);
+              e.target.parentNode.children[1].classList.remove('pl-24');
+              backButtonRef.current.parentNode.children[1].value = '';
+            }}>&larr; Back</button>
+            <input type="text" placeholder="Search for a variant, gene, or phenotype" className="input input-bordered input-primary w-full" onChange={x => {
+              // wait to see if the user has stopped typing
+              if (typingTimer !== null) {
+                clearTimeout(typingTimer);
+              }
+              const timeout = setTimeout(() => {
+                setSearchQuery(x.target.value);
+                setTypingTimer(null);
+              }, 1000);
+              setTypingTimer(timeout);
+            }} />
           </div>
         </div>
-        {Object.keys(vtkPreviews).map((c => {
-          return (
-            <div className="col-span-12 sm:col-span-2" ref={vtkPreviews[c]} key={c}>
-              <img src={`/data/static/gifs/C${c}.gif`} className="w-full animate__animated animate__bounceInDown" alt={"C" + c} />
-              <button className="btn btn-primary btn-block btn-sm" onClick={(e) => {
-                animateIn(c);
-              }}>3D View C{c}</button>
-            </div>
-          )
-        }))}
-        <p className={phenotype.length > 0 ? "col-span-12 text-right" : "hidden"}><button className="btn btn-link btn-sm" onClick={() => {
-          const actors = window.renderWindow.getRenderers()[0].getActors();
-          for (let i = 0; i < actors.length; i++) {
-            const disabled = actors[i];
-            disabled.getProperty().setOpacity(1);
-            const h1 = parseInt(md5(`C${atlas}_${i}_r`), 16) / max_hash;
-            const h2 = parseInt(md5(`C${atlas}_${i}_g`), 16) / max_hash;
-            const h3 = parseInt(md5(`C${atlas}_${i}_b`), 16) / max_hash;
-            disabled.getProperty().setColor(h1, h2, h3);
-          }
-          setPhenotype('');
-          window.render();
-        }}>Reset selection</button>.</p>
-        <form className="col-span-12">
-          <div className="form-control my-2">
-            <div className="relative">
-              <button className="absolute top-0 left-0 rounded-r-none btn btn-primary hidden" ref={backButtonRef} onClick={(e) => {
-                const actors = window.renderWindow.getRenderers()[0].getActors();
-                for (let i = 0; i < actors.length; i++) {
-                  const disabled = actors[i];
-                  disabled.getProperty().setOpacity(1);
-                  const h1 = parseInt(md5(`C${atlas}_${i}_r`), 16) / max_hash;
-                  const h2 = parseInt(md5(`C${atlas}_${i}_g`), 16) / max_hash;
-                  const h3 = parseInt(md5(`C${atlas}_${i}_b`), 16) / max_hash;
-                  disabled.getProperty().setColor(h1, h2, h3);
-                }
-                window.render();
-                animateOut();
-                setSearchResults({
-                  'GWAS': [[]],
-                  'IWAS': [[]],
-                  'geneticCorrelation': [[]],
-                  'geneAnalysis': [[]],
-                  'heritabilityEstimate': [[]],
-                });
-                setPhenotype('');
-                setAtlas(0);
-                e.target.parentNode.children[1].classList.remove('pl-24');
-                backButtonRef.current.parentNode.children[1].value = '';
-              }}>&larr; Back</button>
-              <input type="text" placeholder="Search for a variant, gene, or phenotype" className="input input-bordered input-primary w-full" onChange={x => {
-                // wait to see if the user has stopped typing
-                if (typingTimer !== null) {
-                  clearTimeout(typingTimer);
-                }
-                const timeout = setTimeout(() => {
-                  setSearchQuery(x.target.value);
-                  setTypingTimer(null);
-                }, 1000);
-                setTypingTimer(timeout);
-              }} />
-            </div>
-          </div>
-        </form>
+      </form>
 
-        {/* <p className={searchQuery.length > 0 && ((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) === 0 ? "col-span-12" : "hidden"}>No results for "{searchQuery}".</p> */}
-        <p className={(atlas > 0 && phenotype.length === 0) ? "text-center col-span-12" : "hidden"}>Search or right-click an IDP to see more info.</p>
+      {/* <p className={searchQuery.length > 0 && ((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) === 0 ? "col-span-12" : "hidden"}>No results for "{searchQuery}".</p> */}
+      <p className={(atlas > 0 && phenotype.length === 0) ? "text-center col-span-12" : "hidden"}>Search or right-click an IDP to see more info.</p>
 
-        {Object.keys(pagination).map(table => (
-          <div className={searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden z-10 bg-white max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
-            <h4 className="font-bold text-xl inline">{table}</h4>
-            <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>
-            <div className="inline btn-group float-right">
-              <button className={"btn btn-xs" + (pagination[table] === 0 ? ' btn-disabled' : '')} onClick={(e) => {
+      {Object.keys(pagination).map(table => (
+        <div className={searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden z-10 bg-white max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <h4 className="font-bold text-xl inline">{table}</h4>
+          <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>
+          <div className="inline btn-group float-right">
+            <button className={"btn btn-xs" + (pagination[table] === 0 ? ' btn-disabled' : '')} onClick={(e) => {
+              switch (table) {
+                case 'GWAS':
+                  setPagination({
+                    GWAS: pagination.GWAS - 1,
+                    IWAS: pagination.IWAS,
+                    geneticCorrelation: pagination.geneticCorrelation,
+                    geneAnalysis: pagination.geneAnalysis,
+                    heritabilityEstimate: pagination.heritabilityEstimate,
+                  });
+                  break;
+                case 'IWAS':
+                  setPagination({
+                    GWAS: pagination.GWAS,
+                    IWAS: pagination.IWAS - 1,
+                    geneticCorrelation: pagination.geneticCorrelation,
+                    geneAnalysis: pagination.geneAnalysis,
+                    heritabilityEstimate: pagination.heritabilityEstimate,
+                  });
+                  break;
+                case 'geneticCorrelation':
+                  setPagination({
+                    GWAS: pagination.GWAS,
+                    IWAS: pagination.IWAS,
+                    geneticCorrelation: pagination.geneticCorrelation - 1,
+                    geneAnalysis: pagination.geneAnalysis,
+                    heritabilityEstimate: pagination.heritabilityEstimate,
+                  });
+                  break;
+                case 'geneAnalysis':
+                  setPagination({
+                    GWAS: pagination.GWAS,
+                    IWAS: pagination.IWAS,
+                    geneticCorrelation: pagination.geneticCorrelation,
+                    geneAnalysis: pagination.geneAnalysis - 1,
+                    heritabilityEstimate: pagination.heritabilityEstimate,
+                  });
+                  break;
+                case 'heritabilityEstimate':
+                  setPagination({
+                    GWAS: pagination.GWAS,
+                    IWAS: pagination.IWAS,
+                    geneticCorrelation: pagination.geneticCorrelation,
+                    geneAnalysis: pagination.geneAnalysis,
+                    heritabilityEstimate: pagination.heritabilityEstimate - 1,
+                  });
+                  break;
+                default:
+                  console.error('Unknown table: ' + table);
+                  break;
+              }
+            }}>«</button>
+            {[...Array(Math.min(searchResults[table].length, 4)).keys()].map(x => (
+              <button className={"btn btn-xs" + (x === Math.min(pagination[table], 2) ? " btn-active" : '')} onClick={(e) => {
                 switch (table) {
                   case 'GWAS':
                     setPagination({
-                      GWAS: pagination.GWAS - 1,
+                      // offset + current_page then subtract min(current_page, 2) to show prev pages
+                      GWAS: x + pagination.GWAS - Math.min(pagination.GWAS, 2),
                       IWAS: pagination.IWAS,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
@@ -558,7 +611,7 @@ function App() {
                   case 'IWAS':
                     setPagination({
                       GWAS: pagination.GWAS,
-                      IWAS: pagination.IWAS - 1,
+                      IWAS: x + pagination.IWAS - Math.min(pagination.IWAS, 2),
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -568,7 +621,7 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS,
-                      geneticCorrelation: pagination.geneticCorrelation - 1,
+                      geneticCorrelation: x + pagination.geneticCorrelation - Math.min(pagination.geneticCorrelation, 2),
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
                     });
@@ -578,7 +631,7 @@ function App() {
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS,
                       geneticCorrelation: pagination.geneticCorrelation,
-                      geneAnalysis: pagination.geneAnalysis - 1,
+                      geneAnalysis: x + pagination.geneAnalysis - Math.min(pagination.geneAnalysis, 2),
                       heritabilityEstimate: pagination.heritabilityEstimate,
                     });
                     break;
@@ -588,203 +641,148 @@ function App() {
                       IWAS: pagination.IWAS,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
-                      heritabilityEstimate: pagination.heritabilityEstimate - 1,
+                      heritabilityEstimate: x + pagination.heritabilityEstimate - Math.min(pagination.heritabilityEstimate, 2),
                     });
                     break;
                   default:
                     console.error('Unknown table: ' + table);
                     break;
                 }
-              }}>«</button>
-              {[...Array(Math.min(searchResults[table].length, 4)).keys()].map(x => (
-                <button className={"btn btn-xs" + (x === Math.min(pagination[table], 2) ? " btn-active" : '')} onClick={(e) => {
-                  switch (table) {
-                    case 'GWAS':
-                      setPagination({
-                        // offset + current_page then subtract min(current_page, 2) to show prev pages
-                        GWAS: x + pagination.GWAS - Math.min(pagination.GWAS, 2),
-                        IWAS: pagination.IWAS,
-                        geneticCorrelation: pagination.geneticCorrelation,
-                        geneAnalysis: pagination.geneAnalysis,
-                        heritabilityEstimate: pagination.heritabilityEstimate,
-                      });
-                      break;
-                    case 'IWAS':
-                      setPagination({
-                        GWAS: pagination.GWAS,
-                        IWAS: x + pagination.IWAS - Math.min(pagination.IWAS, 2),
-                        geneticCorrelation: pagination.geneticCorrelation,
-                        geneAnalysis: pagination.geneAnalysis,
-                        heritabilityEstimate: pagination.heritabilityEstimate,
-                      });
-                      break;
-                    case 'geneticCorrelation':
-                      setPagination({
-                        GWAS: pagination.GWAS,
-                        IWAS: pagination.IWAS,
-                        geneticCorrelation: x + pagination.geneticCorrelation - Math.min(pagination.geneticCorrelation, 2),
-                        geneAnalysis: pagination.geneAnalysis,
-                        heritabilityEstimate: pagination.heritabilityEstimate,
-                      });
-                      break;
-                    case 'geneAnalysis':
-                      setPagination({
-                        GWAS: pagination.GWAS,
-                        IWAS: pagination.IWAS,
-                        geneticCorrelation: pagination.geneticCorrelation,
-                        geneAnalysis: x + pagination.geneAnalysis - Math.min(pagination.geneAnalysis, 2),
-                        heritabilityEstimate: pagination.heritabilityEstimate,
-                      });
-                      break;
-                    case 'heritabilityEstimate':
-                      setPagination({
-                        GWAS: pagination.GWAS,
-                        IWAS: pagination.IWAS,
-                        geneticCorrelation: pagination.geneticCorrelation,
-                        geneAnalysis: pagination.geneAnalysis,
-                        heritabilityEstimate: x + pagination.heritabilityEstimate - Math.min(pagination.heritabilityEstimate, 2),
-                      });
-                      break;
-                    default:
-                      console.error('Unknown table: ' + table);
-                      break;
-                  }
-                }} key={x}>{1 + x + pagination[table] - Math.min(pagination[table], 2)}</button>
-              ))}
-              <button className={"btn btn-xs" + (pagination[table] === searchResults[table].length - 1 ? ' btn-disabled' : '')} onClick={(e) => {
-                switch (table) {
-                  case 'GWAS':
-                    setPagination({
-                      GWAS: pagination.GWAS + 1,
-                      IWAS: pagination.IWAS,
-                      geneticCorrelation: pagination.geneticCorrelation,
-                      geneAnalysis: pagination.geneAnalysis,
-                      heritabilityEstimate: pagination.heritabilityEstimate,
-                    });
-                    break;
-                  case 'IWAS':
-                    setPagination({
-                      GWAS: pagination.GWAS,
-                      IWAS: pagination.IWAS + 1,
-                      geneticCorrelation: pagination.geneticCorrelation,
-                      geneAnalysis: pagination.geneAnalysis,
-                      heritabilityEstimate: pagination.heritabilityEstimate,
-                    });
-                    break;
-                  case 'geneticCorrelation':
-                    setPagination({
-                      GWAS: pagination.GWAS,
-                      IWAS: pagination.IWAS,
-                      geneticCorrelation: pagination.geneticCorrelation + 1,
-                      geneAnalysis: pagination.geneAnalysis,
-                      heritabilityEstimate: pagination.heritabilityEstimate,
-                    });
-                    break;
-                  case 'geneAnalysis':
-                    setPagination({
-                      GWAS: pagination.GWAS,
-                      IWAS: pagination.IWAS,
-                      geneticCorrelation: pagination.geneticCorrelation,
-                      geneAnalysis: pagination.geneAnalysis + 1,
-                      heritabilityEstimate: pagination.heritabilityEstimate,
-                    });
-                    break;
-                  case 'heritabilityEstimate':
-                    setPagination({
-                      GWAS: pagination.GWAS,
-                      IWAS: pagination.IWAS,
-                      geneticCorrelation: pagination.geneticCorrelation,
-                      geneAnalysis: pagination.geneAnalysis,
-                      heritabilityEstimate: pagination.heritabilityEstimate + 1,
-                    });
-                    break;
-                  default:
-                    console.error('Unknown table: ' + table);
-                    break;
-                }
-              }}>»</button>
-            </div>
-            <table className="table w-full table-compact">
-              <thead>
-                {table === 'GWAS' ? <tr><th></th><th>ID</th><th>P-value</th><th>Beta</th></tr> :
-                  table === 'IWAS' ? <tr><th></th><th>Trait</th><th>P-value</th><th>ES</th></tr> :
-                    table === 'geneticCorrelation' ? <tr><th></th><th>Trait</th><th>Mean</th><th>Std. Dev.</th><th>P-value</th></tr> :
-                      table === 'geneAnalysis' ? <tr><th></th><th>Gene</th><th>Chromosome</th><th>Start - Stop</th><th>NSNPS</th><th>NPARAM</th><th>N</th><th>Z Stat</th><th>P-value</th></tr> :
-                        table === 'heritabilityEstimate' ? <tr><th></th><th>Heritability</th><th>P-value</th></tr> :
-                          <div>Error: unknown table {table}</div>}
-              </thead>
-              <tbody>
-                {searchResults[table][pagination[table]] === undefined ? <tr></tr> : searchResults[table][pagination[table]].map((x, i) => {
-                  const trClick = () => {
-                    setPhenotype(x.IDP);
-                    setSearchQuery(x.IDP);
-                    backButtonRef.current.parentNode.children[1].value = x.IDP; // set the input value to the IDP
-                    const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
-                    const greyOut = () => { // make actors grayed out
-                      const actors = window.renderWindow.getRenderers()[0].getActors();
-                      for (let i = 0; i < actors.length; i++) {
-                        const actor = actors[i]
-                        actor.getProperty().setColor(0.5, 0.5, 0.5);
-                        actor.getProperty().setOpacity(0.2);
-                      }
-                      for (const c in allActors[x_atlas]) {
-                        if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
-                          const actor = allActors[x_atlas][c];
-                          if (actor.name === x.IDP) {
-                            actor.actor.getProperty().setColor(1, 0, 0);
-                            actor.actor.getProperty().setOpacity(1);
-                            break;
-                          }
+              }} key={x}>{1 + x + pagination[table] - Math.min(pagination[table], 2)}</button>
+            ))}
+            <button className={"btn btn-xs" + (pagination[table] === searchResults[table].length - 1 ? ' btn-disabled' : '')} onClick={(e) => {
+              switch (table) {
+                case 'GWAS':
+                  setPagination({
+                    GWAS: pagination.GWAS + 1,
+                    IWAS: pagination.IWAS,
+                    geneticCorrelation: pagination.geneticCorrelation,
+                    geneAnalysis: pagination.geneAnalysis,
+                    heritabilityEstimate: pagination.heritabilityEstimate,
+                  });
+                  break;
+                case 'IWAS':
+                  setPagination({
+                    GWAS: pagination.GWAS,
+                    IWAS: pagination.IWAS + 1,
+                    geneticCorrelation: pagination.geneticCorrelation,
+                    geneAnalysis: pagination.geneAnalysis,
+                    heritabilityEstimate: pagination.heritabilityEstimate,
+                  });
+                  break;
+                case 'geneticCorrelation':
+                  setPagination({
+                    GWAS: pagination.GWAS,
+                    IWAS: pagination.IWAS,
+                    geneticCorrelation: pagination.geneticCorrelation + 1,
+                    geneAnalysis: pagination.geneAnalysis,
+                    heritabilityEstimate: pagination.heritabilityEstimate,
+                  });
+                  break;
+                case 'geneAnalysis':
+                  setPagination({
+                    GWAS: pagination.GWAS,
+                    IWAS: pagination.IWAS,
+                    geneticCorrelation: pagination.geneticCorrelation,
+                    geneAnalysis: pagination.geneAnalysis + 1,
+                    heritabilityEstimate: pagination.heritabilityEstimate,
+                  });
+                  break;
+                case 'heritabilityEstimate':
+                  setPagination({
+                    GWAS: pagination.GWAS,
+                    IWAS: pagination.IWAS,
+                    geneticCorrelation: pagination.geneticCorrelation,
+                    geneAnalysis: pagination.geneAnalysis,
+                    heritabilityEstimate: pagination.heritabilityEstimate + 1,
+                  });
+                  break;
+                default:
+                  console.error('Unknown table: ' + table);
+                  break;
+              }
+            }}>»</button>
+          </div>
+          <table className="table w-full table-compact">
+            <thead>
+              {table === 'GWAS' ? <tr><th></th><th>ID</th><th>P-value</th><th>Beta</th></tr> :
+                table === 'IWAS' ? <tr><th></th><th>Trait</th><th>P-value</th><th>ES</th></tr> :
+                  table === 'geneticCorrelation' ? <tr><th></th><th>Trait</th><th>Mean</th><th>Std. Dev.</th><th>P-value</th></tr> :
+                    table === 'geneAnalysis' ? <tr><th></th><th>Gene</th><th>Chromosome</th><th>Start - Stop</th><th>NSNPS</th><th>NPARAM</th><th>N</th><th>Z Stat</th><th>P-value</th></tr> :
+                      table === 'heritabilityEstimate' ? <tr><th></th><th>Heritability</th><th>P-value</th></tr> :
+                        <div>Error: unknown table {table}</div>}
+            </thead>
+            <tbody>
+              {searchResults[table][pagination[table]] === undefined ? <tr></tr> : searchResults[table][pagination[table]].map((x, i) => {
+                const trClick = () => {
+                  setPhenotype(x.IDP);
+                  setSearchQuery(x.IDP);
+                  backButtonRef.current.parentNode.children[1].value = x.IDP; // set the input value to the IDP
+                  const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
+                  const greyOut = () => { // make actors grayed out
+                    const actors = window.renderWindow.getRenderers()[0].getActors();
+                    for (let i = 0; i < actors.length; i++) {
+                      const actor = actors[i]
+                      actor.getProperty().setColor(0.5, 0.5, 0.5);
+                      actor.getProperty().setOpacity(0.2);
+                    }
+                    for (const c in allActors[x_atlas]) {
+                      if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
+                        const actor = allActors[x_atlas][c];
+                        if (actor.name === x.IDP) {
+                          actor.actor.getProperty().setColor(1, 0, 0);
+                          actor.actor.getProperty().setOpacity(1);
+                          break;
                         }
                       }
-                      window.render();
                     }
-                    if (atlas === 0) {
-                      animateIn(x_atlas, greyOut);
-                    } else {
-                      greyOut();
-                    }
+                    window.render();
                   }
-                  switch (table) {
-                    case 'GWAS':
-                      return (
-                        <tr key={i} className="hover cursor-pointer" onClick={trClick}>
-                          <td>{x.IDP}</td><td>{x.ID}</td><td>{x.P}</td><td>{x.BETA}</td>
-                        </tr>
-                      );
-                    case 'IWAS':
-                      return (
-                        <tr key={i} className="hover cursor-pointer" onClick={trClick}>
-                          <td>{x.IDP}</td><td>{x.trait}</td><td>{x.Pvalue}</td><td>{x.ES}</td>
-                        </tr>
-                      );
-                    case 'geneticCorrelation':
-                      return (
-                        <tr key={i} className="hover cursor-pointer" onClick={trClick}>
-                          <td>{x.IDP}</td><td>{x.trait}</td><td>{x.gc_mean}</td><td>{x.gc_std}</td><td>{x.P}</td>
-                        </tr>
-                      );
-                    case 'geneAnalysis':
-                      return (
-                        <tr key={i} className="hover cursor-pointer" onClick={trClick}>
-                          <td>{x.IDP}</td><td>{x.GENE}</td><td>{x.CHR}</td><td>{x.START} - {x.STOP}</td><td>{x.NSNPS}</td><td>{x.NPARAM}</td><td>{x.N}</td><td>{x.ZSTAT}</td><td>{x.P}</td>
-                        </tr>
-                      );
-                    case 'heritabilityEstimate':
-                      return (
-                        <tr key={i} className="hover cursor-pointer" onClick={trClick}>
-                          <td>{x.IDP}</td><td>{x.Heritability}</td><td>{x.Pvalue}</td>
-                        </tr>
-                      );
-                    default:
-                      return <div>Error: unknown table {table}</div>;
+                  if (atlas === 0) {
+                    animateIn(x_atlas, greyOut);
+                  } else {
+                    greyOut();
                   }
-                })}
-              </tbody>
-            </table>
-          </div>
-        ))}
-      </div> {/* end of grid */}
+                }
+                switch (table) {
+                  case 'GWAS':
+                    return (
+                      <tr key={i} className="hover cursor-pointer" onClick={trClick}>
+                        <td>{x.IDP}</td><td>{x.ID}</td><td>{x.P}</td><td>{x.BETA}</td>
+                      </tr>
+                    );
+                  case 'IWAS':
+                    return (
+                      <tr key={i} className="hover cursor-pointer" onClick={trClick}>
+                        <td>{x.IDP}</td><td>{x.trait}</td><td>{x.Pvalue}</td><td>{x.ES}</td>
+                      </tr>
+                    );
+                  case 'geneticCorrelation':
+                    return (
+                      <tr key={i} className="hover cursor-pointer" onClick={trClick}>
+                        <td>{x.IDP}</td><td>{x.trait}</td><td>{x.gc_mean}</td><td>{x.gc_std}</td><td>{x.P}</td>
+                      </tr>
+                    );
+                  case 'geneAnalysis':
+                    return (
+                      <tr key={i} className="hover cursor-pointer" onClick={trClick}>
+                        <td>{x.IDP}</td><td>{x.GENE}</td><td>{x.CHR}</td><td>{x.START} - {x.STOP}</td><td>{x.NSNPS}</td><td>{x.NPARAM}</td><td>{x.N}</td><td>{x.ZSTAT}</td><td>{x.P}</td>
+                      </tr>
+                    );
+                  case 'heritabilityEstimate':
+                    return (
+                      <tr key={i} className="hover cursor-pointer" onClick={trClick}>
+                        <td>{x.IDP}</td><td>{x.Heritability}</td><td>{x.Pvalue}</td>
+                      </tr>
+                    );
+                  default:
+                    return <div>Error: unknown table {table}</div>;
+                }
+              })}
+            </tbody>
+          </table>
+        </div>
+      ))}
     </div>
   );
 
