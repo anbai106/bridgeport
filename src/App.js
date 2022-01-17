@@ -293,7 +293,7 @@ function App() {
     if (searchQuery.length === 0) {
       setSearchResults(matches);
     } else {
-      if (searchQuery.startsWith('C')) {
+      if (searchQuery.toUpperCase().startsWith('C')) {
         // need to search everything (gene analysis, heritability estimates, genetic correlation, GWAS and IWAS)
         matches['GWAS'] = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, {
           keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
@@ -371,7 +371,6 @@ function App() {
       }
       setSearchResults(paginateResults(matches, 10));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, atlas]);
 
   const animateIn = (c, cb = null) => {
@@ -420,7 +419,7 @@ function App() {
 
   return (
 
-    <div className="grid grid-cols-12 auto-rows-max gap-1 px-24 h-full">
+    <div className="grid grid-cols-12 auto-rows-max gap-1 px-24 min-h-full mb-16">
       <div className="col-span-12 py-4 z-10">
         <ul className={(window.innerWidth > 640 ? 'horizontal ' : '') + "menu items-stretch px-3 shadow-lg bg-base-100 w-full sm:w-auto rounded-box float-right"}>
           <li className="bordered">
@@ -465,8 +464,8 @@ function App() {
         <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`/data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} />
         <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`/data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
       </div>
-      <div className={atlas > 0 ? (phenotype.length === 0 ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh'}}>
-        <div style={phenotype.length === 0 ? {bottom: 'calc(30vw - 100px)'} : {}} className="-z-40 h-full relative">
+      <div className={atlas > 0 ? (phenotype.length === 0 ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh' }}>
+        <div style={phenotype.length === 0 ? { bottom: 'calc(30vw - 100px)' } : {}} className="-z-40 h-full relative">
           <div className={atlas > 0 && phenotype.length === 0 ? "-z-30 animate__animated animate__bounceInDown" : "max-w-lg -z-30 animate__animated animate__bounceInLeft"} ref={vtkContainerRef} />
         </div>
       </div>
@@ -531,6 +530,29 @@ function App() {
               }, 1000);
               setTypingTimer(timeout);
             }} />
+            <ul tabindex="0" className={(searchQuery.toUpperCase().startsWith('C') && (searchQuery.endsWith('_') || searchQuery.indexOf('_') === -1)) ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
+              {searchQuery.endsWith('_') ?
+                [...Array(parseInt(searchQuery.replace('C', '').replace('_', ''))).keys()].map(x => (
+                  <li>
+                    <button onClick={e => {
+                      e.preventDefault();
+                      animateIn(searchQuery.replace('C', '').replace('_', ''));
+                      setSearchQuery(searchQuery + (x + 1));
+                      backButtonRef.current.parentNode.children[1].value = searchQuery + (x + 1);
+                    }} className="btn btn-ghost text-left inline w-fit">{searchQuery}{x + 1}</button>
+                  </li>)) :
+                searchQuery.indexOf('_') === -1 ?
+                  [32, 64, 128, 256, 512, 1024].map(x => (
+                    <li>
+                      <button onClick={e => {
+                        e.preventDefault();
+                        setSearchQuery(`C${x}_`);
+                        backButtonRef.current.parentNode.children[1].value = `C${x}_`;
+                      }} className="btn btn-ghost text-left inline w-fit">C{x}_</button>
+                    </li>)) :
+                  <li></li>
+              }
+            </ul>
           </div>
         </div>
       </form>
@@ -539,8 +561,8 @@ function App() {
       <p className={(atlas > 0 && phenotype.length === 0) ? "text-center col-span-12" : "hidden"}>Search or right-click an IDP to see more info.</p>
 
       {Object.keys(pagination).map(table => (
-        <div className={searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden z-10 bg-white max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
-          <h4 className="font-bold text-xl inline">{table}</h4>
+        <div className={searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden z-10 max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <h4 className="font-bold text-xl inline">{table === 'geneAnalysis' ? 'Gene analysis' : table === 'heritabilityEstimate' ? 'Heritability estimate' : table}</h4>
           <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>
           <div className="inline btn-group float-right">
             <button className={"btn btn-xs" + (pagination[table] === 0 ? ' btn-disabled' : '')} onClick={(e) => {
