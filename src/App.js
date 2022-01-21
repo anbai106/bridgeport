@@ -407,6 +407,22 @@ function App() {
     }
   }
 
+  const greyOut = (target) => { // make actors (except target) grayed out
+    const actors = window.renderWindow.getRenderers()[0].getActors();
+    for (let i = 0; i < actors.length; i++) {
+      const actor = actors[i]
+      if (actor.getMapper().getInputData().getPointData().getGlobalIds() === target) {
+        actor.getProperty().setColor(1, 0, 0); // red
+        actor.getProperty().setOpacity(1);
+      } else {
+        actor.getProperty().setColor(0.5, 0.5, 0.5);
+        actor.getProperty().setOpacity(0.2);
+      }
+    }
+    window.render();
+  }
+
+
   return (
 
     <div className="grid grid-cols-12 auto-rows-max gap-1 px-24 min-h-full mb-16">
@@ -482,7 +498,10 @@ function App() {
         setPhenotype('');
         window.render();
       }}>Reset selection</button>.</p>
-      <form className="col-span-12">
+      <form className="col-span-12" onSubmit={e => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}>
         <div className="form-control my-2">
           <div className="relative">
             <button className="absolute top-0 left-0 rounded-r-none btn btn-primary hidden" ref={backButtonRef} onClick={(e) => {
@@ -517,7 +536,10 @@ function App() {
               const timeout = setTimeout(() => {
                 setSearchQuery(x.target.value);
                 setTypingTimer(null);
-              }, 1000);
+                if (x.target.value.toUpperCase().startsWith('C') && x.target.value.indexOf('_') > 0 && !isNaN(x.target.value.split('_')[1])) {
+                  greyOut(x.target.value);
+                }
+              }, 900);
               setTypingTimer(timeout);
             }} />
             <ul tabIndex="0" className={(searchQuery.toUpperCase().startsWith('C') && (searchQuery.endsWith('_') || searchQuery.indexOf('_') === -1)) ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
@@ -528,21 +550,7 @@ function App() {
                       e.preventDefault();
                       const searchedAtlas = searchQuery.replace('C', '').replace('_', '');
                       const searchedIDP = searchQuery + (x + 1);
-                      const greyOut = () => { // make actors grayed out
-                        const actors = window.renderWindow.getRenderers()[0].getActors();
-                        for (let i = 0; i < actors.length; i++) {
-                          const actor = actors[i]
-                          if (actor.getMapper().getInputData().getPointData().getGlobalIds() === searchedIDP) {
-                            actor.getProperty().setColor(1, 0, 0);
-                            actor.getProperty().setOpacity(1);
-                          } else {
-                            actor.getProperty().setColor(0.5, 0.5, 0.5);
-                            actor.getProperty().setOpacity(0.2);
-                          }
-                        }
-                        window.render();
-                      }
-                      animateIn(searchedAtlas, greyOut);
+                      animateIn(searchedAtlas, () => greyOut(searchedIDP));
                       setSearchQuery(searchedIDP);
                       backButtonRef.current.parentNode.children[1].value = searchedIDP;
                     }} className="btn btn-ghost text-left inline w-fit">{searchQuery}{x + 1}</button>
@@ -747,24 +755,10 @@ function App() {
                   setSearchQuery(x.IDP);
                   backButtonRef.current.parentNode.children[1].value = x.IDP; // set the input value to the IDP
                   const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
-                  const greyOut = () => { // make actors grayed out
-                    const actors = window.renderWindow.getRenderers()[0].getActors();
-                    for (let i = 0; i < actors.length; i++) {
-                      const actor = actors[i]
-                      if (actor.getMapper().getInputData().getPointData().getGlobalIds() === x.IDP) {
-                        actor.getProperty().setColor(1, 0, 0);
-                        actor.getProperty().setOpacity(1);
-                      } else {
-                        actor.getProperty().setColor(0.5, 0.5, 0.5);
-                        actor.getProperty().setOpacity(0.2);
-                      }
-                    }
-                    window.render();
-                  }
                   if (atlas === 0) {
-                    animateIn(x_atlas, greyOut);
+                    animateIn(x_atlas, () => greyOut(x.IDP));
                   } else {
-                    greyOut();
+                    greyOut(x.IDP);
                   }
                 }
                 switch (table) {
