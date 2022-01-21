@@ -78,14 +78,6 @@ function App() {
     512: useRef(null),
     1024: useRef(null),
   };
-  const [allActors, setAllActors] = useState({
-    32: {},
-    64: {},
-    128: {},
-    256: {},
-    512: {},
-    1024: {},
-  });
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState({
     // double arrays for pagination
@@ -187,12 +179,8 @@ function App() {
         actor.getProperty().setColor(h1, h2, h3);
 
         renderer.addActor(actor);
-        // somewhat arbitrarily chosen property to use as the id
-        // any value that's unique (and referenceable outside of this function) will do
-        const id = mapper.getInputData().getNumberOfCells();
-        let tmp = allActors;
-        tmp[c][id] = { name: `C${c}_${i}`, actor: actor };
-        setAllActors(tmp);
+        // set id for reference later
+        mapper.getInputData().getPointData().setGlobalIds(`C${c}_${i}`);
 
         resetCamera();
         renderer.getActiveCamera().zoom(0.8);
@@ -243,11 +231,13 @@ function App() {
       const cameraPos = camera.getPosition();
       const largestDim = cameraPos.reduce((iMax, x, i, arr) => x > arr[iMax] ? i : iMax, 0) * 2
       const sortedByDim = picker.getActors().sort((a, b) => (a.getBounds()[largestDim + 1] + a.getBounds()[largestDim]) - (b.getBounds()[largestDim + 1] + b.getBounds()[largestDim])).reverse()
-      // console.log(cameraPos, ...picker.getActors().map(a => a.getBounds()), sortedByDim[0].getMapper().getInputData().getNumberOfCells());
-      // const index = (renderer.getActiveCamera().getPosition()[2] > 0) ?  sortedByDim.length - 1 : 0;
-      // picker.getActors().forEach((a) => console.log(a.getBounds(), a.getMapper().getInputData().getNumberOfCells(), picker.getPickPosition(), pos.x, pos.y));
-      setPhenotype(allActors[c][sortedByDim[0].getMapper().getInputData().getNumberOfCells()].name);
-      setSearchQuery(allActors[c][sortedByDim[0].getMapper().getInputData().getNumberOfCells()].name);
+      // const actor = allActors[c][JSON.stringify(sortedByDim[0].getMapper().getInputData().getBounds())];
+      const allActors = renderWindow.getRenderers()[0].getActors();
+      const actor = allActors.find(a => a.getMapper().getInputData().getPointData().getGlobalIds() === sortedByDim[0].getMapper().getInputData().getPointData().getGlobalIds());
+      const actorName = actor.getMapper().getInputData().getPointData().getGlobalIds()
+      setPhenotype(actorName);
+      setSearchQuery(actorName);
+      backButtonRef.current.parentNode.children[1].value = actorName;
 
 
       // get list of actors, set opacity to 0.5
@@ -530,15 +520,31 @@ function App() {
               }, 1000);
               setTypingTimer(timeout);
             }} />
-            <ul tabindex="0" className={(searchQuery.toUpperCase().startsWith('C') && (searchQuery.endsWith('_') || searchQuery.indexOf('_') === -1)) ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
+            <ul tabIndex="0" className={(searchQuery.toUpperCase().startsWith('C') && (searchQuery.endsWith('_') || searchQuery.indexOf('_') === -1)) ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
               {searchQuery.endsWith('_') ?
                 [...Array(parseInt(searchQuery.replace('C', '').replace('_', ''))).keys()].map(x => (
                   <li>
                     <button onClick={e => {
                       e.preventDefault();
-                      animateIn(searchQuery.replace('C', '').replace('_', ''));
-                      setSearchQuery(searchQuery + (x + 1));
-                      backButtonRef.current.parentNode.children[1].value = searchQuery + (x + 1);
+                      const searchedAtlas = searchQuery.replace('C', '').replace('_', '');
+                      const searchedIDP = searchQuery + (x + 1);
+                      const greyOut = () => { // make actors grayed out
+                        const actors = window.renderWindow.getRenderers()[0].getActors();
+                        for (let i = 0; i < actors.length; i++) {
+                          const actor = actors[i]
+                          if (actor.getMapper().getInputData().getPointData().getGlobalIds() === searchedIDP) {
+                            actor.getProperty().setColor(1, 0, 0);
+                            actor.getProperty().setOpacity(1);
+                          } else {
+                            actor.getProperty().setColor(0.5, 0.5, 0.5);
+                            actor.getProperty().setOpacity(0.2);
+                          }
+                        }
+                        window.render();
+                      }
+                      animateIn(searchedAtlas, greyOut);
+                      setSearchQuery(searchedIDP);
+                      backButtonRef.current.parentNode.children[1].value = searchedIDP;
                     }} className="btn btn-ghost text-left inline w-fit">{searchQuery}{x + 1}</button>
                   </li>)) :
                 searchQuery.indexOf('_') === -1 ?
@@ -745,17 +751,12 @@ function App() {
                     const actors = window.renderWindow.getRenderers()[0].getActors();
                     for (let i = 0; i < actors.length; i++) {
                       const actor = actors[i]
-                      actor.getProperty().setColor(0.5, 0.5, 0.5);
-                      actor.getProperty().setOpacity(0.2);
-                    }
-                    for (const c in allActors[x_atlas]) {
-                      if (Object.hasOwnProperty.call(allActors[x_atlas], c)) {
-                        const actor = allActors[x_atlas][c];
-                        if (actor.name === x.IDP) {
-                          actor.actor.getProperty().setColor(1, 0, 0);
-                          actor.actor.getProperty().setOpacity(1);
-                          break;
-                        }
+                      if (actor.getMapper().getInputData().getPointData().getGlobalIds() === x.IDP) {
+                        actor.getProperty().setColor(1, 0, 0);
+                        actor.getProperty().setOpacity(1);
+                      } else {
+                        actor.getProperty().setColor(0.5, 0.5, 0.5);
+                        actor.getProperty().setOpacity(0.2);
                       }
                     }
                     window.render();
