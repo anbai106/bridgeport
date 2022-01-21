@@ -571,9 +571,6 @@ function App() {
         </div>
       </form>
 
-      {/* <p className={searchQuery.length > 0 && ((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) === 0 ? "col-span-12" : "hidden"}>No results for "{searchQuery}".</p> */}
-      <p className={(atlas > 0 && phenotype.length === 0) ? "text-center col-span-12" : "hidden"}>Search or right-click an IDP to see more info.</p>
-
       {Object.keys(pagination).map(table => (
         <div className={searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden z-10 max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
           <h4 className="font-bold text-xl inline">{table === 'geneAnalysis' ? 'Gene analysis' : table === 'heritabilityEstimate' ? 'Heritability estimate' : table}</h4>
@@ -753,7 +750,18 @@ function App() {
                 const trClick = () => {
                   setPhenotype(x.IDP);
                   setSearchQuery(x.IDP);
-                  backButtonRef.current.parentNode.children[1].value = x.IDP; // set the input value to the IDP
+                  if (x.hasOwnProperty('trait')) {
+                    backButtonRef.current.parentNode.children[1].value = x.trait;
+                  }
+                  else if (x.hasOwnProperty('GENE')) {
+                    backButtonRef.current.parentNode.children[1].value = x.GENE;
+                  }
+                  else if (x.hasOwnProperty('ID')) {
+                    backButtonRef.current.parentNode.children[1].value = x.ID;
+                  }
+                  else {
+                    backButtonRef.current.parentNode.children[1].value = x.IDP;
+                  }
                   const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
                   if (atlas === 0) {
                     animateIn(x_atlas, () => greyOut(x.IDP));
