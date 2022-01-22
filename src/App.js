@@ -87,8 +87,8 @@ function App() {
     'geneAnalysis': [[]],
     'heritabilityEstimate': [[]],
   });
-  const [atlas, setAtlas] = useState(0);
-  const [phenotype, setPhenotype] = useState('');
+  const [phenotype, setPhenotype] = useState(''); // aka IDP e.g. C32_1
+  const [atlas, setAtlas] = useState(0); // the 32 in C32_1
   const [typingTimer, setTypingTimer] = useState(null);
   const [chartType, setChartType] = useState('manhattan'); // or 'qq'
   const [pagination, setPagination] = useState({
@@ -374,44 +374,26 @@ function App() {
     vtkContainerRef.current.addEventListener('animationend', () => {
       vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomInLeft');
     }, { once: true });
-
-    for (const key in vtkPreviews) {
-      if (Object.hasOwnProperty.call(vtkPreviews, key)) {
-        const el = vtkPreviews[key].current;
-        el.classList.add('animate__animated', 'animate__zoomOutRight');
-        el.addEventListener('animationend', () => {
-          el.classList.add('hidden');
-          el.classList.remove('animate__animated', 'animate__zoomOutRight');
-        }, { once: true });
-      }
-    }
   }
 
   const animateOut = () => {
     setAtlas(0);
+    setPhenotype('');
+    backButtonRef.current.parentNode.children[1].classList.remove('pl-24'); // remove padding from search box
     backButtonRef.current.classList.add('hidden');
     vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomOutRight');
     vtkContainerRef.current.addEventListener('animationend', () => {
       vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomOutRight');
       vtkContainerRef.current.innerHTML = '';
     }, { once: true });
-    for (const key in vtkPreviews) {
-      if (Object.hasOwnProperty.call(vtkPreviews, key)) {
-        const el = vtkPreviews[key].current;
-        el.classList.remove('hidden');
-        el.classList.add('animate__animated', 'animate__zoomInLeft');
-        el.addEventListener('animationend', () => {
-          el.classList.remove('animate__animated', 'animate__zoomInLeft');
-        }, { once: true });
-      }
-    }
   }
 
   const greyOut = (target) => { // make actors (except target) grayed out
+    const upperTarget = target.toUpperCase();
     const actors = window.renderWindow.getRenderers()[0].getActors();
     for (let i = 0; i < actors.length; i++) {
       const actor = actors[i]
-      if (actor.getMapper().getInputData().getPointData().getGlobalIds() === target) {
+      if (actor.getMapper().getInputData().getPointData().getGlobalIds() === upperTarget) {
         actor.getProperty().setColor(1, 0, 0); // red
         actor.getProperty().setOpacity(1);
       } else {
@@ -427,7 +409,7 @@ function App() {
 
     <div className="grid grid-cols-12 auto-rows-max gap-1 px-24 min-h-full mb-16">
       <div className="col-span-12 py-4 z-10">
-        <ul className={(window.innerWidth > 640 ? 'horizontal ' : '') + "menu items-stretch px-3 shadow-lg bg-base-100 w-full sm:w-auto rounded-box float-right"}>
+        <ul className="horizontal sm-menu menu items-stretch px-3 shadow-lg bg-base-100 rounded-box max-w-full sm:float-right overflow-x-scroll">
           <li className="bordered">
             <a href="/">
               BRIDGEPORT
@@ -462,10 +444,10 @@ function App() {
       {/* data-value is the number of actors loaded, value is the % */}
       {/* eslint-disable-next-line eqeqeq */}
       <progress className="hidden" style={{ marginBottom: '70vh' }} data-value="0" value="0" min="0" max="100" ref={progressRef}></progress>
-      <div className={phenotype.length > 0 ? "col-span-8 z-10 relative" : "hidden"}>
+      <div className={searchQuery.toUpperCase().startsWith('C') && searchQuery.indexOf('_') > 0 && !isNaN(parseInt(searchQuery.split('_')[1])) ? "col-span-8 z-10 relative" : "hidden"}>
         <div className="tabs">
-          <button onClick={x => setChartType('manhattan')} className={chartType === 'manhattan' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>Manhattan</button>
-          <button onClick={x => setChartType('qq')} className={chartType === 'qq' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>QQ</button>
+          <button onClick={() => setChartType('manhattan')} className={chartType === 'manhattan' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>Manhattan</button>
+          <button onClick={() => setChartType('qq')} className={chartType === 'qq' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>QQ</button>
         </div>
         <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`/data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} />
         <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`/data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
@@ -477,7 +459,7 @@ function App() {
       </div>
       {Object.keys(vtkPreviews).map((c => {
         return (
-          <div className="col-span-12 sm:col-span-2" ref={vtkPreviews[c]} key={c}>
+          <div className={atlas > 0 ? "hidden" : "col-span-12 sm:col-span-2"} ref={vtkPreviews[c]} key={c}>
             <img src={`/data/static/gifs/C${c}.gif`} className="w-full animate__animated animate__bounceInDown" alt={"C" + c} />
             <button className="btn btn-primary btn-block btn-sm" onClick={(e) => {
               animateIn(c);
@@ -505,6 +487,18 @@ function App() {
         <div className="form-control my-2">
           <div className="relative">
             <button className="absolute top-0 left-0 rounded-r-none btn btn-primary hidden" ref={backButtonRef} onClick={(e) => {
+              e.preventDefault();
+              if (window.renderWindow === undefined) {
+                return;
+              }
+              setSearchResults({
+                'GWAS': [[]],
+                'IWAS': [[]],
+                'geneticCorrelation': [[]],
+                'geneAnalysis': [[]],
+                'heritabilityEstimate': [[]],
+              });
+              setSearchQuery('');
               const actors = window.renderWindow.getRenderers()[0].getActors();
               for (let i = 0; i < actors.length; i++) {
                 const disabled = actors[i];
@@ -515,18 +509,8 @@ function App() {
                 disabled.getProperty().setColor(h1, h2, h3);
               }
               window.render();
-              animateOut();
-              setSearchResults({
-                'GWAS': [[]],
-                'IWAS': [[]],
-                'geneticCorrelation': [[]],
-                'geneAnalysis': [[]],
-                'heritabilityEstimate': [[]],
-              });
-              setPhenotype('');
-              setAtlas(0);
-              e.target.parentNode.children[1].classList.remove('pl-24');
               backButtonRef.current.parentNode.children[1].value = '';
+              animateOut();
             }}>&larr; Back</button>
             <input type="text" placeholder="Search for a variant, gene, or phenotype" className="input input-bordered input-primary w-full" onChange={x => {
               // wait to see if the user has stopped typing
@@ -536,22 +520,33 @@ function App() {
               const timeout = setTimeout(() => {
                 setSearchQuery(x.target.value);
                 setTypingTimer(null);
-                if (x.target.value.toUpperCase().startsWith('C') && x.target.value.indexOf('_') > 0 && !isNaN(x.target.value.split('_')[1])) {
-                  greyOut(x.target.value);
+                if (x.target.value.toUpperCase().startsWith('C')) { // started typing IDP
+                  if (x.target.value.indexOf('_') > 0 && !isNaN(parseInt(x.target.value.split('_')[1]))) { // typed full IDP
+                    setPhenotype(x.target.value.toUpperCase());
+                    const searchedAtlas = x.target.value.substring(1, x.target.value.indexOf('_')); // extract between C and _
+                    if (searchedAtlas === atlas) {
+                      greyOut(x.target.value);
+                    } else { // animate in different atlas
+                      animateIn(searchedAtlas, () => greyOut(x.target.value));
+                    }
+                  }
+                } else if (atlas > 0) { // only searching for IDP shows vtk figure, manhattan / qq plots
+                  animateOut();
                 }
               }, 900);
               setTypingTimer(timeout);
             }} />
             <ul tabIndex="0" className={(searchQuery.toUpperCase().startsWith('C') && (searchQuery.endsWith('_') || searchQuery.indexOf('_') === -1)) ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
               {searchQuery.endsWith('_') ?
-                [...Array(parseInt(searchQuery.replace('C', '').replace('_', ''))).keys()].map(x => (
+                [...Array(parseInt(searchQuery.toUpperCase().replace('C', '').replace('_', ''))).keys()].map(x => (
                   <li>
                     <button onClick={e => {
                       e.preventDefault();
-                      const searchedAtlas = searchQuery.replace('C', '').replace('_', '');
-                      const searchedIDP = searchQuery + (x + 1);
+                      const searchedAtlas = searchQuery.toUpperCase().replace('C', '').replace('_', '');
+                      const searchedIDP = searchQuery.toUpperCase() + (x + 1);
                       animateIn(searchedAtlas, () => greyOut(searchedIDP));
                       setSearchQuery(searchedIDP);
+                      setPhenotype(searchedIDP);
                       backButtonRef.current.parentNode.children[1].value = searchedIDP;
                     }} className="btn btn-ghost text-left inline w-fit">{searchQuery}{x + 1}</button>
                   </li>)) :
@@ -561,6 +556,7 @@ function App() {
                       <button onClick={e => {
                         e.preventDefault();
                         setSearchQuery(`C${x}_`);
+                        // animateIn(x);
                         backButtonRef.current.parentNode.children[1].value = `C${x}_`;
                       }} className="btn btn-ghost text-left inline w-fit">C{x}_</button>
                     </li>)) :
@@ -573,7 +569,7 @@ function App() {
 
       {Object.keys(pagination).map(table => (
         <div className={searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden z-10 max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
-          <h4 className="font-bold text-xl inline">{table === 'geneAnalysis' ? 'Gene analysis' : table === 'heritabilityEstimate' ? 'Heritability estimate' : table}</h4>
+          <h4 className="font-bold text-xl inline">{table === 'geneAnalysis' ? 'Gene analysis' : table === 'heritabilityEstimate' ? 'Heritability estimate' : table === 'geneticCorrelation' ? 'Genetic correlation' : table}</h4>
           <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>
           <div className="inline btn-group float-right">
             <button className={"btn btn-xs" + (pagination[table] === 0 ? ' btn-disabled' : '')} onClick={(e) => {
@@ -748,26 +744,25 @@ function App() {
             <tbody>
               {searchResults[table][pagination[table]] === undefined ? <tr></tr> : searchResults[table][pagination[table]].map((x, i) => {
                 const trClick = () => {
-                  setPhenotype(x.IDP);
-                  setSearchQuery(x.IDP);
+                  let trValue = x.IDP;
+                  // setPhenotype(trValue);
                   if (x.hasOwnProperty('trait')) {
-                    backButtonRef.current.parentNode.children[1].value = x.trait;
+                    trValue = x.trait;
                   }
                   else if (x.hasOwnProperty('GENE')) {
-                    backButtonRef.current.parentNode.children[1].value = x.GENE;
+                    trValue = x.GENE;
                   }
                   else if (x.hasOwnProperty('ID')) {
-                    backButtonRef.current.parentNode.children[1].value = x.ID;
+                    trValue = x.ID;
                   }
-                  else {
-                    backButtonRef.current.parentNode.children[1].value = x.IDP;
-                  }
-                  const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
-                  if (atlas === 0) {
-                    animateIn(x_atlas, () => greyOut(x.IDP));
-                  } else {
-                    greyOut(x.IDP);
-                  }
+                  setSearchQuery(trValue);
+                  backButtonRef.current.parentNode.children[1].value = trValue;
+                  // const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
+                  // if (atlas === 0) {
+                  //   animateIn(x_atlas, () => greyOut(x.IDP));
+                  // } else {
+                  //   greyOut(x.IDP);
+                  // }
                 }
                 switch (table) {
                   case 'GWAS':
