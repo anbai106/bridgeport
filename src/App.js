@@ -406,10 +406,10 @@ function App() {
 
 
   return (
-    <div class="min-h-full">
+    <div className="min-h-full">
       <div className="grid main-container grid-cols-12 auto-rows-max gap-1 px-24 min-h-full mb-4">
-        <div className="col-span-12 py-4 z-10">
-          <ul className="horizontal sm-menu menu items-stretch px-3 shadow-lg bg-base-100 rounded-box max-w-full sm:float-right overflow-x-scroll">
+        <div className="col-span-12 py-4">
+          <ul className="horizontal sm-menu menu items-stretch px-3 shadow-lg bg-base-100 rounded-box max-w-full sm:float-right overflow-visible">
             <li className="bordered">
               <a href="/">
                 BRIDGEPORT
@@ -426,7 +426,16 @@ function App() {
               <span>GWAS</span>
             </li>
             <li>
-              <span>Download</span>
+              <div className="dropdown dropdown-end">
+                <button className="btn btn-ghost text-base font-normal normal-case" tabIndex="0">Download</button>
+                <ul tabIndex="0" className="p-2 shadow menu dropdown-content bg-base-100 rounded-box w-52">
+                  {[32, 64, 128, 256, 512, 1024].map(i => (
+                    <li key={i}>
+                      <a href="/">Download C{i}</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </li>
             <li>
               <span>Software</span>
@@ -439,8 +448,8 @@ function App() {
             </li>
           </ul>
         </div>
-        <h1 className="col-span-12 text-3xl font-bold z-10">BRIDGEPORT: Bridge knowledge across brain imaging, genomics, cognition and pathology</h1>
-        <h4 className="col-span-12 text-lg z-10">Browse IWAS, GWAS, and gene-level associations for imaging, cognitive, pathological and clinical traits</h4>
+        <h1 className="col-span-12 text-3xl font-bold">BRIDGEPORT: Bridge knowledge across brain imaging, genomics, cognition and pathology</h1>
+        <h4 className="col-span-12 text-lg">Browse IWAS, GWAS, and gene-level associations for imaging, cognitive, pathological and clinical traits</h4>
         {/* data-value is the number of actors loaded, value is the % */}
         {/* eslint-disable-next-line eqeqeq */}
         <progress className="hidden" style={{ marginBottom: '70vh' }} data-value="0" value="0" min="0" max="100" ref={progressRef}></progress>
@@ -568,7 +577,7 @@ function App() {
         </form>
 
         {Object.keys(pagination).map(table => (
-          <div className={searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden z-10 max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <div className={searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
             <h4 className="font-bold text-xl inline">{table === 'geneAnalysis' ? 'Gene analysis' : table === 'heritabilityEstimate' ? 'Heritability estimate' : table === 'geneticCorrelation' ? 'Genetic correlation' : table}</h4>
             <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>
             <div className="inline btn-group float-right">
