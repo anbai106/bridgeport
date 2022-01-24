@@ -79,6 +79,7 @@ function App() {
     1024: useRef(null),
   };
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [searchResults, setSearchResults] = useState({
     // double arrays for pagination
     'GWAS': [[]],
@@ -264,6 +265,7 @@ function App() {
     // renderWindow.getInteractor().onLeftButtonPress(highlightCell);
   }; // end of renderAtlas
 
+  // search when search query changes
   useEffect(() => {
     const includesAndStartsWith = (str, arr) => {
       for (let i = 0; i < arr.length; i++) {
@@ -325,6 +327,16 @@ function App() {
             });
           }
         });
+        let suggestions = []
+        if (searchQuery.indexOf('_') === -1) { // Cx
+          suggestions = ['C32_', 'C64_', 'C128_', 'C256_', 'C512_', 'C1024_']
+        } else if (searchQuery.endsWith('_')) { // Cx_
+          suggestions = [...Array(parseInt(searchQuery.toUpperCase().replace('C', '').replace('_', ''))).keys()].map(i => `${searchQuery.toUpperCase()}${i+1}`);
+        } else { // Cx_y
+          const parts = searchQuery.toUpperCase().split('_');
+          suggestions = [...Array(parseInt(parts[0].replace('C', ''))).keys()].map(i => `${parts[0]}_${i+1}`);
+        }
+        setSearchSuggestions(suggestions);
       } else if (searchQuery.startsWith('rs')) {
         // only need to search GWAS
         matches['GWAS'] = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, {
@@ -335,26 +347,29 @@ function App() {
             })
           }
         });
+        setSearchSuggestions(matches['GWAS'].map(item => item.ID).filter((value, index, self) => self.indexOf(value) === index));
       } else if (includesAndStartsWith(searchQuery, clinical_traits)) {
         // only need to search IWAS
         matches['IWAS'] = matchSorter(atlas > 0 ? IWASByAtlas[atlas] : IWAS, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'trait' }],
+          keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'trait' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
               return parseFloat(b.item.Pvalue) - parseFloat(a.item.Pvalue)
             })
           }
         });
+        setSearchSuggestions(matches['IWAS'].map(item => item.trait).filter((value, index, self) => self.indexOf(value) === index));
       } else { // presumably a gene symbol
         // only need to search gene analysis
         matches['geneAnalysis'] = matchSorter(atlas > 0 ? geneAnalysisByAtlas[atlas] : geneAnalysis, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'GENE' }],
+          keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'GENE' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
               return parseFloat(b.item.P) - parseFloat(a.item.P)
             })
           }
         });
+        setSearchSuggestions(matches['geneAnalysis'].map(item => item.GENE).filter((value, index, self) => self.indexOf(value) === index));
       }
       if (matches['GWAS'].length === 0 && matches['IWAS'].length === 0 && matches['geneAnalysis'].length === 0 && matches['geneticCorrelation'].length === 0) {
         matches['GWAS'] = atlas > 0 ? GWASByAtlas[atlas] : GWAS
@@ -402,6 +417,24 @@ function App() {
       }
     }
     window.render();
+  }
+
+  const submitSearch = (inputElement) => {
+    setSearchSuggestions([]);
+    setSearchQuery(inputElement.value);
+    if (inputElement.value.toUpperCase().startsWith('C')) { // started typing IDP
+      if (inputElement.value.indexOf('_') > 0 && !isNaN(parseInt(inputElement.value.split('_')[1]))) { // typed full IDP
+        setPhenotype(inputElement.value.toUpperCase());
+        const searchedAtlas = inputElement.value.substring(1, inputElement.value.indexOf('_')); // extract between C and _
+        if (searchedAtlas === atlas) {
+          greyOut(inputElement.value);
+        } else { // animate in different atlas
+          animateIn(searchedAtlas, () => greyOut(inputElement.value));
+        }
+      }
+    } else if (atlas > 0) { // only searching for IDP shows vtk figure, manhattan / qq plots
+      animateOut();
+    }
   }
 
 
@@ -453,7 +486,7 @@ function App() {
         {/* data-value is the number of actors loaded, value is the % */}
         {/* eslint-disable-next-line eqeqeq */}
         <progress className="hidden" style={{ marginBottom: '70vh' }} data-value="0" value="0" min="0" max="100" ref={progressRef}></progress>
-        <div className={searchQuery.toUpperCase().startsWith('C') && searchQuery.indexOf('_') > 0 && !isNaN(parseInt(searchQuery.split('_')[1])) ? "col-span-8 z-10 relative" : "hidden"}>
+        <div className={atlas > 0 && phenotype.length > 0 ? "col-span-8 z-10 relative" : "hidden"}>
           <div className="tabs">
             <button onClick={() => setChartType('manhattan')} className={chartType === 'manhattan' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>Manhattan</button>
             <button onClick={() => setChartType('qq')} className={chartType === 'qq' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>QQ</button>
@@ -492,10 +525,11 @@ function App() {
         <form className="col-span-12" onSubmit={e => {
           e.preventDefault();
           e.stopPropagation();
-        }}>
+          submitSearch(e.target.querySelector('input'))
+          }}>
           <div className="form-control my-2">
             <div className="relative">
-              <button className="absolute top-0 left-0 rounded-r-none btn btn-primary hidden" ref={backButtonRef} onClick={(e) => {
+              <button type="button" className="absolute top-0 left-0 rounded-r-none btn btn-primary hidden" ref={backButtonRef} onClick={(e) => {
                 e.preventDefault();
                 if (window.renderWindow === undefined) {
                   return;
@@ -508,6 +542,7 @@ function App() {
                   'heritabilityEstimate': [[]],
                 });
                 setSearchQuery('');
+                setSearchSuggestions([]);
                 const actors = window.renderWindow.getRenderers()[0].getActors();
                 for (let i = 0; i < actors.length; i++) {
                   const disabled = actors[i];
@@ -529,48 +564,28 @@ function App() {
                 const timeout = setTimeout(() => {
                   setSearchQuery(x.target.value);
                   setTypingTimer(null);
-                  if (x.target.value.toUpperCase().startsWith('C')) { // started typing IDP
-                    if (x.target.value.indexOf('_') > 0 && !isNaN(parseInt(x.target.value.split('_')[1]))) { // typed full IDP
-                      setPhenotype(x.target.value.toUpperCase());
-                      const searchedAtlas = x.target.value.substring(1, x.target.value.indexOf('_')); // extract between C and _
-                      if (searchedAtlas === atlas) {
-                        greyOut(x.target.value);
-                      } else { // animate in different atlas
-                        animateIn(searchedAtlas, () => greyOut(x.target.value));
-                      }
-                    }
-                  } else if (atlas > 0) { // only searching for IDP shows vtk figure, manhattan / qq plots
-                    animateOut();
-                  }
                 }, 900);
                 setTypingTimer(timeout);
               }} />
-              <ul tabIndex="0" className={(searchQuery.toUpperCase().startsWith('C') && (searchQuery.endsWith('_') || searchQuery.indexOf('_') === -1)) ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
-                {searchQuery.endsWith('_') ?
-                  [...Array(parseInt(searchQuery.toUpperCase().replace('C', '').replace('_', ''))).keys()].map(x => (
-                    <li>
-                      <button onClick={e => {
+              <button type="submit" className="absolute top-0 right-0 rounded-l-none btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="inline-block w-6 h-6 stroke-current">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </button>
+              <ul tabIndex="0" className={searchSuggestions.length > 0 ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
+                {searchSuggestions.map((x, i) => {
+                  return (
+                    <li key={i} className="hover:bg-primary-100">
+                      <button onClick={(e) => {
                         e.preventDefault();
-                        const searchedAtlas = searchQuery.toUpperCase().replace('C', '').replace('_', '');
-                        const searchedIDP = searchQuery.toUpperCase() + (x + 1);
-                        animateIn(searchedAtlas, () => greyOut(searchedIDP));
-                        setSearchQuery(searchedIDP);
-                        setPhenotype(searchedIDP);
-                        backButtonRef.current.parentNode.children[1].value = searchedIDP;
-                      }} className="btn btn-ghost text-left inline w-fit">{searchQuery}{x + 1}</button>
-                    </li>)) :
-                  searchQuery.indexOf('_') === -1 ?
-                    [32, 64, 128, 256, 512, 1024].map(x => (
-                      <li>
-                        <button onClick={e => {
-                          e.preventDefault();
-                          setSearchQuery(`C${x}_`);
-                          // animateIn(x);
-                          backButtonRef.current.parentNode.children[1].value = `C${x}_`;
-                        }} className="btn btn-ghost text-left inline w-fit">C{x}_</button>
-                      </li>)) :
-                    <li></li>
-                }
+                        backButtonRef.current.parentNode.children[1].value = x;
+                        submitSearch(backButtonRef.current.parentNode.children[1])
+                      }
+                      } className="btn btn-ghost text-left inline w-fit normal-case font-medium">{x}</button>
+                    </li>
+                  );
+                })}
+
               </ul>
             </div>
           </div>
