@@ -67,10 +67,11 @@ const clinical_traits = [...new Set(IWAS.map(d => d.trait))];
 
 
 function App() {
-  const vtkContainerRef = useRef(null);
-  const backButtonRef = useRef(null);
-  const progressRef = useRef(null);
-  const vtkPreviews = {
+  // global state
+  const vtkContainerRef = useRef(null); // vtk figure
+  const backButtonRef = useRef(null); // back button (also used to find search box which is adjacent)
+  const progressRef = useRef(null); // progress bar
+  const vtkPreviews = { // vtk preview GIFs for each atlas
     32: useRef(null),
     64: useRef(null),
     128: useRef(null),
@@ -79,9 +80,10 @@ function App() {
     1024: useRef(null),
   };
   const [searched, setSearched] = useState(false); // whether the search form's been submitted
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchSuggestions, setSearchSuggestions] = useState([]);
-  const [searchResults, setSearchResults] = useState({
+  const [searchBy, setSearchBy] = useState(''); // data table to search through
+  const [searchQuery, setSearchQuery] = useState(''); // the actual query
+  const [searchSuggestions, setSearchSuggestions] = useState([]); // suggestions for the search query
+  const [searchResults, setSearchResults] = useState({ // results of the search
     // double arrays for pagination
     'GWAS': [[]],
     'IWAS': [[]],
@@ -91,15 +93,17 @@ function App() {
   });
   const [phenotype, setPhenotype] = useState(''); // aka IDP e.g. C32_1
   const [atlas, setAtlas] = useState(0); // the 32 in C32_1
-  const [typingTimer, setTypingTimer] = useState(null);
+  const [typingTimer, setTypingTimer] = useState(null); // auto search timer for suggestions
   const [chartType, setChartType] = useState('manhattan'); // or 'qq'
-  const [pagination, setPagination] = useState({
+  const [pagination, setPagination] = useState({ // pagination for the data table
     GWAS: 0,
     IWAS: 0,
     geneticCorrelation: 0,
     geneAnalysis: 0,
     heritabilityEstimate: 0,
   });
+
+  // helpers
   const paginateResults = (results, perPage) => {
     const paginatedResults = {
       // double arrays for pagination
@@ -286,7 +290,7 @@ function App() {
     if (searchQuery.length === 0) {
       setSearchResults(matches);
     } else {
-      if (searchQuery.toUpperCase().startsWith('C')) {
+      if (searchBy === 'IDP' || (searchQuery.toUpperCase().startsWith('C') && searchBy === '')) {
         // need to search everything (gene analysis, heritability estimates, genetic correlation, GWAS and IWAS)
         matches['GWAS'] = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, {
           keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
@@ -332,13 +336,13 @@ function App() {
         if (searchQuery.indexOf('_') === -1) { // Cx
           suggestions = ['C32_', 'C64_', 'C128_', 'C256_', 'C512_', 'C1024_']
         } else if (searchQuery.endsWith('_')) { // Cx_
-          suggestions = [...Array(parseInt(searchQuery.toUpperCase().replace('C', '').replace('_', ''))).keys()].map(i => `${searchQuery.toUpperCase()}${i+1}`);
+          suggestions = [...Array(parseInt(searchQuery.toUpperCase().replace('C', '').replace('_', ''))).keys()].map(i => `${searchQuery.toUpperCase()}${i + 1}`);
         } else { // Cx_y
           const parts = searchQuery.toUpperCase().split('_');
-          suggestions = [...Array(parseInt(parts[0].replace('C', ''))).keys()].map(i => `${parts[0]}_${i+1}`);
+          suggestions = [...Array(parseInt(parts[0].replace('C', ''))).keys()].map(i => `${parts[0]}_${i + 1}`);
         }
         setSearchSuggestions(suggestions);
-      } else if (searchQuery.startsWith('rs')) {
+      } else if (searchBy === 'SNP' || (searchQuery.startsWith('rs') && searchBy === '')) {
         // only need to search GWAS
         matches['GWAS'] = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, {
           keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'ID' }],
@@ -349,7 +353,7 @@ function App() {
           }
         });
         setSearchSuggestions(matches['GWAS'].map(item => item.ID).filter((value, index, self) => self.indexOf(value) === index));
-      } else if (includesAndStartsWith(searchQuery, clinical_traits)) {
+      } else if (searchBy === 'IWAS' || (searchBy === '' && includesAndStartsWith(searchQuery, clinical_traits))) {
         // only need to search IWAS
         matches['IWAS'] = matchSorter(atlas > 0 ? IWASByAtlas[atlas] : IWAS, searchQuery, {
           keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'trait' }],
@@ -377,12 +381,13 @@ function App() {
       }
       setSearchResults(paginateResults(matches, 10));
     }
-  }, [searchQuery, atlas]);
+  }, [searchQuery, searchBy, atlas]);
 
   const animateIn = (c, cb = null) => {
     setAtlas(c);
     renderAtlas(c, cb);
     backButtonRef.current.classList.remove('hidden');
+    backButtonRef.current.parentNode.children[1].classList.remove('pl-40')
     backButtonRef.current.parentNode.children[1].classList.add('pl-24')
 
     vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomInLeft');
@@ -395,7 +400,8 @@ function App() {
   const animateOut = () => {
     setAtlas(0);
     setPhenotype('');
-    backButtonRef.current.parentNode.children[1].classList.remove('pl-24'); // remove padding from search box
+    backButtonRef.current.parentNode.children[1].classList.remove('pl-24');
+    backButtonRef.current.parentNode.children[1].classList.add('pl-40');
     backButtonRef.current.classList.add('hidden');
     vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomOutRight');
     vtkContainerRef.current.addEventListener('animationend', () => {
@@ -532,7 +538,7 @@ function App() {
           setTypingTimer(null);
           setSearched(true);
           submitSearch(e.target.querySelector('input'))
-          }}>
+        }}>
           <div className="form-control my-2">
             <div className="relative">
               <button type="button" className="absolute top-0 left-0 rounded-r-none btn btn-primary hidden" ref={backButtonRef} onClick={(e) => {
@@ -562,7 +568,14 @@ function App() {
                 backButtonRef.current.parentNode.children[1].value = '';
                 animateOut();
               }}>&larr; Back</button>
-              <input type="text" placeholder="Search for a variant, gene, or phenotype" className="input input-bordered input-primary w-full" onChange={x => {
+              <select className="select select-bordered select-primary absolute top-0 left-0" onChange={x => setSearchBy(x.target.value)}>
+                <option value="">Search by</option>
+                <option value="IDP">IDP</option>
+                <option value="SNP">SNP</option>
+                <option value="geneAnalysis">Gene symbol</option>
+                <option value="IWAS">Clinical traits</option>
+              </select>
+              <input type="text" placeholder="Search for a variant, gene, or phenotype" className="input input-bordered input-primary w-full pl-40" onChange={x => {
                 // wait to see if the user has stopped typing
                 if (typingTimer !== null) {
                   clearTimeout(typingTimer);
