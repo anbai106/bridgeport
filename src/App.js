@@ -78,6 +78,7 @@ function App() {
     512: useRef(null),
     1024: useRef(null),
   };
+  const [searched, setSearched] = useState(false); // whether the search form's been submitted
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [searchResults, setSearchResults] = useState({
@@ -525,6 +526,11 @@ function App() {
         <form className="col-span-12" onSubmit={e => {
           e.preventDefault();
           e.stopPropagation();
+          if (typingTimer !== null) {
+            clearTimeout(typingTimer);
+          }
+          setTypingTimer(null);
+          setSearched(true);
           submitSearch(e.target.querySelector('input'))
           }}>
           <div className="form-control my-2">
@@ -564,6 +570,7 @@ function App() {
                 const timeout = setTimeout(() => {
                   setSearchQuery(x.target.value);
                   setTypingTimer(null);
+                  setSearched(false);
                 }, 900);
                 setTypingTimer(timeout);
               }} />
@@ -572,7 +579,7 @@ function App() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
               </button>
-              <ul tabIndex="0" className={searchSuggestions.length > 0 ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
+              <ul tabIndex="0" className={searchSuggestions.length > 0 && !searched ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
                 {searchSuggestions.map((x, i) => {
                   return (
                     <li key={i} className="hover:bg-primary-100">
@@ -592,7 +599,7 @@ function App() {
         </form>
 
         {Object.keys(pagination).map(table => (
-          <div className={searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
             <h4 className="font-bold text-xl inline">{table === 'geneAnalysis' ? 'Gene analysis' : table === 'heritabilityEstimate' ? 'Heritability estimate' : table === 'geneticCorrelation' ? 'Genetic correlation' : table}</h4>
             <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>
             <div className="inline btn-group float-right">
