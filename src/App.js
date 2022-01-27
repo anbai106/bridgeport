@@ -69,8 +69,9 @@ const clinical_traits = [...new Set(IWAS.map(d => d.trait))];
 function App() {
   // global state
   const vtkContainerRef = useRef(null); // vtk figure
-  const backButtonRef = useRef(null); // back button (also used to find search box which is adjacent)
+  const backButtonRef = useRef(null); // back button
   const progressRef = useRef(null); // progress bar
+  const searchBoxRef = useRef(null); // search box
   const vtkPreviews = { // vtk preview GIFs for each atlas
     32: useRef(null),
     64: useRef(null),
@@ -243,7 +244,7 @@ function App() {
       const actorName = actor.getMapper().getInputData().getPointData().getGlobalIds()
       setPhenotype(actorName);
       setSearchQuery(actorName);
-      backButtonRef.current.parentNode.children[1].value = actorName;
+      searchBoxRef.current.value = actorName;
 
 
       // get list of actors, set opacity to 0.5
@@ -269,6 +270,45 @@ function App() {
     renderWindow.getInteractor().onRightButtonPress(highlightCell);
     // renderWindow.getInteractor().onLeftButtonPress(highlightCell);
   }; // end of renderAtlas
+
+  window.onpopstate = (event) => {
+    // fires when back / forward button is clicked
+    if (event.state) {
+      setSearchQuery(event.state.searchQuery);
+      setSearchBy(event.state.searchBy);
+      setSearched(true);
+      searchBoxRef.current.value = event.state.searchQuery;
+      submitSearch(searchBoxRef.current, false);
+    }
+  }
+
+  useEffect(() => {
+    // fires to set initial history state, and each time submitSearch is called with pushHistory = true
+    // see https://stackoverflow.com/a/11844412/2624391
+    const p = window.location.pathname;
+    if (p === undefined || p === '/') {
+      return
+    }
+    const parts = p.split('/');
+    let sb = searchBy
+    let sq = ''
+    if (parts.length === 3) {
+      sb = parts[1] === 'search' ? '' : parts[1]
+      sq = parts[2]
+      setSearchBy(sb);
+      setSearchQuery(sq);
+      setSearched(true);
+      searchBoxRef.current.value = sq;
+      submitSearch(searchBoxRef.current, false)
+    }
+    window.history.pushState({
+      searchQuery: sq,
+      searchBy: sb,
+      atlas: atlas,
+      phenotype: phenotype,
+    }, "BRIDGEPORT", "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [window.location.pathname]);
 
   // search when search query changes
   useEffect(() => {
@@ -387,8 +427,6 @@ function App() {
     setAtlas(c);
     renderAtlas(c, cb);
     backButtonRef.current.classList.remove('hidden');
-    backButtonRef.current.parentNode.children[1].classList.remove('pl-40')
-    backButtonRef.current.parentNode.children[1].classList.add('pl-24')
 
     vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomInLeft');
     vtkContainerRef.current.classList.remove('col-span-12', 'sm:col-span-2');
@@ -400,13 +438,11 @@ function App() {
   const animateOut = () => {
     setAtlas(0);
     setPhenotype('');
-    backButtonRef.current.parentNode.children[1].classList.remove('pl-24');
-    backButtonRef.current.parentNode.children[1].classList.add('pl-40');
     backButtonRef.current.classList.add('hidden');
     vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomOutRight');
     vtkContainerRef.current.addEventListener('animationend', () => {
       vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomOutRight');
-      vtkContainerRef.current.innerHTML = '';
+      // vtkContainerRef.current.innerHTML = '';
     }, { once: true });
   }
 
@@ -426,21 +462,28 @@ function App() {
     window.render();
   }
 
-  const submitSearch = (inputElement) => {
+  const submitSearch = (searchBox, pushHistory = true) => {
     setSearchSuggestions([]);
-    setSearchQuery(inputElement.value);
-    if (inputElement.value.toUpperCase().startsWith('C')) { // started typing IDP
-      if (inputElement.value.indexOf('_') > 0 && !isNaN(parseInt(inputElement.value.split('_')[1]))) { // typed full IDP
-        setPhenotype(inputElement.value.toUpperCase());
-        const searchedAtlas = inputElement.value.substring(1, inputElement.value.indexOf('_')); // extract between C and _
+    setSearchQuery(searchBox.value);
+    let searchedAtlas = atlas;
+    if (searchBox.value.toUpperCase().startsWith('C')) { // started typing IDP
+      if (searchBox.value.indexOf('_') > 0 && !isNaN(parseInt(searchBox.value.split('_')[1]))) { // typed full IDP
+        setPhenotype(searchBox.value.toUpperCase());
+        searchedAtlas = searchBox.value.substring(1, searchBox.value.indexOf('_')); // extract between C and _
         if (searchedAtlas === atlas) {
-          greyOut(inputElement.value);
+          greyOut(searchBox.value);
         } else { // animate in different atlas
-          animateIn(searchedAtlas, () => greyOut(inputElement.value));
+          animateIn(searchedAtlas, () => greyOut(searchBox.value));
         }
       }
     } else if (atlas > 0) { // only searching for IDP shows vtk figure, manhattan / qq plots
       animateOut();
+    }
+    if (pushHistory) {
+      window.history.pushState({
+        searchQuery: searchBox.value,
+        searchBy: searchBy,
+      }, searchBox.value, `/${searchBy === '' ? 'search' : searchBy}/${searchBox.value}`);
     }
   }
 
@@ -537,45 +580,23 @@ function App() {
           }
           setTypingTimer(null);
           setSearched(true);
-          submitSearch(e.target.querySelector('input'))
+          const searchBox = e.target.querySelector('input');
+          submitSearch(searchBox)
         }}>
           <div className="form-control my-2">
             <div className="relative">
-              <button type="button" className="absolute top-0 left-0 rounded-r-none btn btn-primary hidden" ref={backButtonRef} onClick={(e) => {
+              <button type="button" className="absolute top-0 left-0 rounded-r-none btn btn-primary hidden w-28" ref={backButtonRef} onClick={(e) => {
                 e.preventDefault();
-                if (window.renderWindow === undefined) {
-                  return;
-                }
-                setSearchResults({
-                  'GWAS': [[]],
-                  'IWAS': [[]],
-                  'geneticCorrelation': [[]],
-                  'geneAnalysis': [[]],
-                  'heritabilityEstimate': [[]],
-                });
-                setSearchQuery('');
-                setSearchSuggestions([]);
-                const actors = window.renderWindow.getRenderers()[0].getActors();
-                for (let i = 0; i < actors.length; i++) {
-                  const disabled = actors[i];
-                  disabled.getProperty().setOpacity(1);
-                  const h1 = parseInt(md5(`C${atlas}_${i}_r`), 16) / max_hash;
-                  const h2 = parseInt(md5(`C${atlas}_${i}_g`), 16) / max_hash;
-                  const h3 = parseInt(md5(`C${atlas}_${i}_b`), 16) / max_hash;
-                  disabled.getProperty().setColor(h1, h2, h3);
-                }
-                window.render();
-                backButtonRef.current.parentNode.children[1].value = '';
-                animateOut();
+                window.history.back();
               }}>&larr; Back</button>
-              <select className="select select-bordered select-primary absolute top-0 left-0" onChange={x => setSearchBy(x.target.value)}>
+              <select className={"select select-bordered select-primary absolute top-0 " + (backButtonRef.current !== null && backButtonRef.current.classList.contains('hidden') ? "left-0" : "left-24")} onChange={x => setSearchBy(x.target.value)}>
                 <option value="">Search by</option>
                 <option value="IDP">IDP</option>
                 <option value="SNP">SNP</option>
                 <option value="geneAnalysis">Gene symbol</option>
                 <option value="IWAS">Clinical traits</option>
               </select>
-              <input type="text" placeholder="Search for a variant, gene, or phenotype" className="input input-bordered input-primary w-full pl-40" onChange={x => {
+              <input type="text" placeholder="Search for a variant, gene, or phenotype" className={(backButtonRef.current !== null && backButtonRef.current.classList.contains('hidden') ? "pl-40" : "pl-64") + " input input-bordered input-primary w-full"} ref={searchBoxRef} onChange={x => {
                 // wait to see if the user has stopped typing
                 if (typingTimer !== null) {
                   clearTimeout(typingTimer);
@@ -598,8 +619,8 @@ function App() {
                     <li key={i} className="hover:bg-primary-100">
                       <button onClick={(e) => {
                         e.preventDefault();
-                        backButtonRef.current.parentNode.children[1].value = x;
-                        submitSearch(backButtonRef.current.parentNode.children[1])
+                        searchBoxRef.current.value = x;
+                        submitSearch(searchBoxRef.current)
                       }
                       } className="btn btn-ghost text-left inline w-fit normal-case font-medium">{x}</button>
                     </li>
@@ -800,7 +821,7 @@ function App() {
                       trValue = x.ID;
                     }
                     setSearchQuery(trValue);
-                    backButtonRef.current.parentNode.children[1].value = trValue;
+                    searchBoxRef.current.value = trValue;
                     // const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
                     // if (atlas === 0) {
                     //   animateIn(x_atlas, () => greyOut(x.IDP));
