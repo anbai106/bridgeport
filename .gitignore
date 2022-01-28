@@ -27,3 +27,4 @@ utils/*.html
 # data
 /data
 !data/*.json
+!data/static/svgs

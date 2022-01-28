@@ -490,7 +490,7 @@ function App() {
 
   return (
     <div className="min-h-full">
-      <div className="grid main-container grid-cols-12 auto-rows-max gap-1 px-24 min-h-full mb-4">
+      <div className="grid main-container grid-cols-12 auto-rows-max gap-1 px-24 mb-4" style={!searched ? { height: 'calc(100% - 15rem)' } : {minHeight: '100%'}}>
         <div className="col-span-12 py-4">
           <ul className="horizontal sm-menu menu items-stretch px-3 shadow-lg bg-base-100 rounded-box max-w-full sm:float-right overflow-visible">
             <li className="bordered">
@@ -531,7 +531,7 @@ function App() {
             </li>
           </ul>
         </div>
-        <h1 className="col-span-12 text-3xl font-bold">BRIDGEPORT: Bridge knowledge across brain imaging, genomics, cognition and pathology</h1>
+        <h1 className="col-span-12 text-3xl font-bold">BRIDGEPORT: Bridge knowledge across brain imaging, genomics, and clinical phenotypes</h1>
         <h4 className="col-span-12 text-lg">Browse IWAS, GWAS, and gene-level associations for imaging, cognitive, pathological and clinical traits</h4>
         {/* data-value is the number of actors loaded, value is the % */}
         {/* eslint-disable-next-line eqeqeq */}
@@ -616,7 +616,7 @@ function App() {
               <ul tabIndex="0" className={searchSuggestions.length > 0 && !searched ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
                 {searchSuggestions.map((x, i) => {
                   return (
-                    <li key={i} className="hover:bg-primary-100">
+                    <li key={i} className="hover:bg-primary-100 z-50">
                       <button onClick={(e) => {
                         e.preventDefault();
                         searchBoxRef.current.value = x;
@@ -869,9 +869,9 @@ function App() {
           </div>
         ))}
       </div>
-      <footer className="p-10 footer bg-primary text-primary-content">
+      <footer className="p-10 footer bg-base-200 text-base-content h-60">
         <div>
-          <span className="footer-title">Contact us</span>
+          <span className="footer-title text-gray-500" style={{opacity:1}}>Contact us</span>
           <ul>
             <li>CBICA</li>
             <li>3700 Hamilton Walk</li>
@@ -882,13 +882,13 @@ function App() {
           </ul>
         </div>
         <div>
-          <span className="footer-title">Links of interest</span>
+          <span className="footer-title text-gray-500" style={{opacity:1}}>Links of interest</span>
           <a target="_blank" rel="noreferrer" className="link link-hover" href="https://www.upenn.edu">University of Pennsylvania</a>
           <a target="_blank" rel="noreferrer" className="link link-hover" href="https://www.med.upenn.edu">Perelman School of Medicine</a>
           <a target="_blank" rel="noreferrer" className="link link-hover" href="https://cbica-wiki.uphs.upenn.edu/wiki/index.php/Main_Page">CBICA WIKI (for internal use)</a>
         </div>
         <div>
-          <span className="footer-title">Follow us</span>
+          <span className="footer-title text-gray-500" style={{opacity:1}}>Follow us</span>
           <div className="grid grid-flow-col gap-4">
             <a href="https://twitter.com/CBICAannounce" target="_blank" rel="noreferrer">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="fill-current">
@@ -906,6 +906,14 @@ function App() {
               </svg>
             </a>
           </div>
+        </div>
+        <div>
+          <img src="/data/static/svgs/UniversityofPennsylvania_Shield_RGB.svg" alt="University of Pennsylvania" className="max-h-100 static" style={{ maxWidth: '8vw' }} />
+        </div>
+      </footer>
+      <footer class="px-10 py-4 border-t footer bg-base-200 text-base-content text-center border-base-300">
+        <div class="grid-flow-col" style={{margin: '0 auto'}}>
+          &copy; The Trustees of the University of Pennsylvania | <a className="link" href="https://accessibility.web-resources.upenn.edu/get-help">Report Accessibility Issues and Get Help</a> | <a className="link" href="https://www.upenn.edu/about/privacy_policy">Privacy Policy</a>
         </div>
       </footer>
     </div>
