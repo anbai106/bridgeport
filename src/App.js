@@ -69,7 +69,6 @@ const clinical_traits = [...new Set(IWAS.map(d => d.trait))];
 function App() {
   // global state
   const vtkContainerRef = useRef(null); // vtk figure
-  const backButtonRef = useRef(null); // back button
   const progressRef = useRef(null); // progress bar
   const searchBoxRef = useRef(null); // search box
   const vtkPreviews = { // vtk preview GIFs for each atlas
@@ -149,6 +148,7 @@ function App() {
     const renderer = genericRenderer.getRenderer();
     const renderWindow = genericRenderer.getRenderWindow();
     renderer.setBackground(1, 1, 1);
+    window.genericRenderer = genericRenderer;
     window.renderWindow = renderWindow;
 
     const resetCamera = renderer.resetCamera;
@@ -197,24 +197,23 @@ function App() {
         // actor.setPosition(0, 350 + ((1/c)*1000), 0);
         progressRef.current.dataset.value++;
         progressRef.current.value = (progressRef.current.dataset.value / c) * 100;
-        if (progressRef.current.dataset.value === c) {
+        // make sure types match
+        if (parseInt(progressRef.current.dataset.value) === parseInt(c)) {
           // vtkContainerRef.current.children[0].remove()
           vtkContainerRef.current.innerHTML = '';
           // window[`actor${c}`] = actor;
           genericRenderer.setContainer(vtkContainerRef.current);
           render();
-          setTimeout(() => {
-            if (cb !== null) {
-              cb();
-            }
-            // const focalPoint = camera.getFocalPoint();
-            // camera.setFocalPoint(focalPoint[0], -75 - ((1/c) * 500), focalPoint[2]);
-            progressRef.current.value = 0;
-            progressRef.current.dataset.value = 0;
-            progressRef.current.classList.add('hidden');
-            progressRef.current.classList.remove("progress", "progress-primary", "z-50", "col-span-12", "w-full");
-            render();
-          }, 750);
+          if (cb !== null) {
+            cb();
+          }
+          // const focalPoint = camera.getFocalPoint();
+          // camera.setFocalPoint(focalPoint[0], -75 - ((1/c) * 500), focalPoint[2]);
+          progressRef.current.value = 0;
+          progressRef.current.dataset.value = 0;
+          progressRef.current.classList.add('hidden');
+          progressRef.current.classList.remove("progress", "progress-primary", "z-50", "col-span-12", "w-full");
+          genericRenderer.resize(); // necessary! to fix blurriness
         }
       }
       reader.setUrl(`/data/MINA/C${c}/C${c}_C${i}.vtk`).then(functions[i - 1]);
@@ -273,12 +272,18 @@ function App() {
 
   window.onpopstate = (event) => {
     // fires when back / forward button is clicked
+    setSearchSuggestions([]);
     if (event.state) {
       setSearchQuery(event.state.searchQuery);
       setSearchBy(event.state.searchBy);
       setSearched(true);
       searchBoxRef.current.value = event.state.searchQuery;
       submitSearch(searchBoxRef.current, false);
+      if (event.state.atlas !== undefined && atlas != event.state.atlas) {
+        animateIn(event.state.atlas)
+      }
+    } else {
+      animateOut();
     }
   }
 
@@ -289,26 +294,35 @@ function App() {
     if (p === undefined || p === '/') {
       return
     }
+    setSearched(true);
     const parts = p.split('/');
     let sb = searchBy
     let sq = ''
+    let a = atlas
     if (parts.length === 3) {
       sb = parts[1] === 'search' ? '' : parts[1]
       sq = parts[2]
       setSearchBy(sb);
       setSearchQuery(sq);
-      setSearched(true);
       searchBoxRef.current.value = sq;
       submitSearch(searchBoxRef.current, false)
+    } else if (parts.length === 2 && p.toUpperCase().startsWith("/C")) {
+      const afterUnderscore = p.indexOf("_");
+      if (afterUnderscore === -1) {
+        a = parseInt(p.substring(2));
+      } else {
+        a = parseInt(p.substring(2, afterUnderscore))
+      }
+      view3D(a)
     }
     window.history.pushState({
       searchQuery: sq,
       searchBy: sb,
-      atlas: atlas,
+      atlas: a,
       phenotype: phenotype,
     }, "BRIDGEPORT", "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [window.location.pathname]);
+  }, []);
 
   // search when search query changes
   useEffect(() => {
@@ -426,7 +440,7 @@ function App() {
   const animateIn = (c, cb = null) => {
     setAtlas(c);
     renderAtlas(c, cb);
-    backButtonRef.current.classList.remove('hidden');
+    setSearched(true);
 
     vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomInLeft');
     vtkContainerRef.current.classList.remove('col-span-12', 'sm:col-span-2');
@@ -438,7 +452,7 @@ function App() {
   const animateOut = () => {
     setAtlas(0);
     setPhenotype('');
-    backButtonRef.current.classList.add('hidden');
+    setSearched(false);
     vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomOutRight');
     vtkContainerRef.current.addEventListener('animationend', () => {
       vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomOutRight');
@@ -463,6 +477,7 @@ function App() {
   }
 
   const submitSearch = (searchBox, pushHistory = true) => {
+    setSearched(true);
     setSearchSuggestions([]);
     setSearchQuery(searchBox.value);
     let searchedAtlas = atlas;
@@ -475,6 +490,9 @@ function App() {
         } else { // animate in different atlas
           animateIn(searchedAtlas, () => greyOut(searchBox.value));
         }
+      } else { // typed only Cx
+        pushHistory = false;
+        setSearched(false);
       }
     } else if (atlas > 0) { // only searching for IDP shows vtk figure, manhattan / qq plots
       animateOut();
@@ -487,10 +505,37 @@ function App() {
     }
   }
 
+  const fancyPlaceholder = searchBy => {
+    switch (searchBy) {
+      case 'IDP':
+        return 'Type Cx_y to search for a phenotype';
+      case 'SNP':
+        return 'Search for a SNP e.g. rs123456789';
+      case 'IWAS':
+        return 'Search for a clinical trait e.g. AD';
+      case 'geneAnalysis':
+        return 'Search for a gene symbol e.g. RUNX2';
+      default:
+        return "Search for a variant, gene, or phenotype";
+    }
+  }
+
+  const view3D = (c) => {
+    animateIn(c);
+    setPhenotype('');
+    setSearched(true);
+    window.history.pushState({
+      searchQuery: '',
+      searchBy: '',
+      atlas: c,
+    }, "C" + c, "/C" + c);
+  }
+
 
   return (
     <div className="min-h-full">
-      <div className="grid main-container grid-cols-12 auto-rows-max gap-1 px-24 mb-4" style={!searched ? { height: 'calc(100% - 15rem)' } : {minHeight: '100%'}}>
+                                                                                                            {/* 15rem = height of footer */}
+      <div className="grid main-container grid-cols-12 auto-rows-max gap-1 px-24 mb-4" style={!searched ? { minHeight: 'calc(100% - 15rem)' } : { minHeight: '100%' }}>
         <div className="col-span-12 py-4">
           <ul className="horizontal sm-menu menu items-stretch px-3 shadow-lg bg-base-100 rounded-box max-w-full sm:float-right overflow-visible">
             <li className="bordered">
@@ -553,9 +598,7 @@ function App() {
           return (
             <div className={atlas > 0 ? "hidden" : "col-span-12 sm:col-span-2"} ref={vtkPreviews[c]} key={c}>
               <img src={`/data/static/gifs/C${c}.gif`} className="w-full animate__animated animate__bounceInDown" alt={"C" + c} />
-              <button className="btn btn-primary btn-block btn-sm" onClick={(e) => {
-                animateIn(c);
-              }}>3D View C{c}</button>
+              <button className="btn btn-primary btn-block btn-sm" onClick={e => view3D(c)}>3D View C{c}</button>
             </div>
           )
         }))}
@@ -571,6 +614,7 @@ function App() {
           }
           setPhenotype('');
           window.render();
+          window.genericRenderer.resize();
         }}>Reset selection</button>.</p>
         <form className="col-span-12" onSubmit={e => {
           e.preventDefault();
@@ -579,24 +623,23 @@ function App() {
             clearTimeout(typingTimer);
           }
           setTypingTimer(null);
-          setSearched(true);
           const searchBox = e.target.querySelector('input');
           submitSearch(searchBox)
         }}>
           <div className="form-control my-2">
             <div className="relative">
-              <button type="button" className="absolute top-0 left-0 rounded-r-none btn btn-primary hidden w-28" ref={backButtonRef} onClick={(e) => {
+              <button type="button" className={(searched ? "" : "hidden") + " absolute top-0 left-0 rounded-r-none btn btn-primary w-28"} onClick={(e) => {
                 e.preventDefault();
                 window.history.back();
               }}>&larr; Back</button>
-              <select className={"select select-bordered select-primary absolute top-0 " + (backButtonRef.current !== null && backButtonRef.current.classList.contains('hidden') ? "left-0" : "left-24")} onChange={x => setSearchBy(x.target.value)}>
+              <select className={"select select-bordered select-primary absolute top-0 " + (searched ? "left-24" : "left-0")} onChange={x => setSearchBy(x.target.value)}>
                 <option value="">Search by</option>
                 <option value="IDP">IDP</option>
                 <option value="SNP">SNP</option>
                 <option value="geneAnalysis">Gene symbol</option>
                 <option value="IWAS">Clinical traits</option>
               </select>
-              <input type="text" placeholder="Search for a variant, gene, or phenotype" className={(backButtonRef.current !== null && backButtonRef.current.classList.contains('hidden') ? "pl-40" : "pl-64") + " input input-bordered input-primary w-full"} ref={searchBoxRef} onChange={x => {
+              <input type="text" placeholder={fancyPlaceholder(searchBy)} className={(searched ? "pl-64" : "pl-40") + " input input-bordered input-primary w-full"} ref={searchBoxRef} onChange={x => {
                 // wait to see if the user has stopped typing
                 if (typingTimer !== null) {
                   clearTimeout(typingTimer);
@@ -613,7 +656,7 @@ function App() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
               </button>
-              <ul tabIndex="0" className={searchSuggestions.length > 0 && !searched ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
+              <ul tabIndex="0" className={searchSuggestions.length > 0 && searchQuery.length > 0 && !searched ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
                 {searchSuggestions.map((x, i) => {
                   return (
                     <li key={i} className="hover:bg-primary-100 z-50">
@@ -869,9 +912,9 @@ function App() {
           </div>
         ))}
       </div>
-      <footer className="p-10 footer bg-base-200 text-base-content h-60">
+      <footer className="p-10 footer bg-base-200 text-base-content min-h-60">
         <div>
-          <span className="footer-title text-gray-500" style={{opacity:1}}>Contact us</span>
+          <span className="footer-title text-gray-500" style={{ opacity: 1 }}>Contact us</span>
           <ul>
             <li>CBICA</li>
             <li>3700 Hamilton Walk</li>
@@ -882,13 +925,13 @@ function App() {
           </ul>
         </div>
         <div>
-          <span className="footer-title text-gray-500" style={{opacity:1}}>Links of interest</span>
+          <span className="footer-title text-gray-500" style={{ opacity: 1 }}>Links of interest</span>
           <a target="_blank" rel="noreferrer" className="link link-hover" href="https://www.upenn.edu">University of Pennsylvania</a>
           <a target="_blank" rel="noreferrer" className="link link-hover" href="https://www.med.upenn.edu">Perelman School of Medicine</a>
           <a target="_blank" rel="noreferrer" className="link link-hover" href="https://cbica-wiki.uphs.upenn.edu/wiki/index.php/Main_Page">CBICA WIKI (for internal use)</a>
         </div>
         <div>
-          <span className="footer-title text-gray-500" style={{opacity:1}}>Follow us</span>
+          <span className="footer-title text-gray-500" style={{ opacity: 1 }}>Follow us</span>
           <div className="grid grid-flow-col gap-4">
             <a href="https://twitter.com/CBICAannounce" target="_blank" rel="noreferrer">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="fill-current">
@@ -908,11 +951,11 @@ function App() {
           </div>
         </div>
         <div>
-          <img src="/data/static/svgs/UniversityofPennsylvania_Shield_RGB.svg" alt="University of Pennsylvania" className="max-h-100 static" style={{ maxWidth: '8vw' }} />
+          <img src="/data/static/svgs/UniversityofPennsylvania_FullLogo_CMYK_mono.svg" alt="University of Pennsylvania" className="max-h-100 max-w-xs static" />
         </div>
       </footer>
-      <footer class="px-10 py-4 border-t footer bg-base-200 text-base-content text-center border-base-300">
-        <div class="grid-flow-col" style={{margin: '0 auto'}}>
+      <footer className="px-10 py-4 border-t footer bg-base-200 text-base-content text-center border-base-300">
+        <div className="grid-flow-col" style={{ margin: '0 auto' }}>
           &copy; The Trustees of the University of Pennsylvania | <a className="link" href="https://accessibility.web-resources.upenn.edu/get-help">Report Accessibility Issues and Get Help</a> | <a className="link" href="https://www.upenn.edu/about/privacy_policy">Privacy Policy</a>
         </div>
       </footer>
