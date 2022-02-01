@@ -329,7 +329,7 @@ function App() {
   useEffect(() => {
     const includesAndStartsWith = (str, arr) => {
       for (let i = 0; i < arr.length; i++) {
-        if (str.includes(arr[i]) || str.startsWith(arr[i])) {
+        if (str.toUpperCase().startsWith(arr[i].toUpperCase())) {
           return true;
         }
       }
@@ -411,14 +411,18 @@ function App() {
       } else if (searchBy === 'IWAS' || (searchBy === '' && includesAndStartsWith(searchQuery, clinical_traits))) {
         // only need to search IWAS
         matches['IWAS'] = matchSorter(atlas > 0 ? IWASByAtlas[atlas] : IWAS, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'trait' }],
+          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'trait' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
               return parseFloat(b.item.Pvalue) - parseFloat(a.item.Pvalue)
             })
           }
         });
-        setSearchSuggestions(matches['IWAS'].map(item => item.trait).filter((value, index, self) => self.indexOf(value) === index));
+        // IWAS suggestions should be fuzzy (results are exact match)
+        const iwasSuggestions = matchSorter(atlas > 0 ? IWASByAtlas[atlas] : IWAS, searchQuery, {
+          keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'trait' }]
+        }).map(item => item.trait).filter((value, index, self) => self.indexOf(value) === index)
+        setSearchSuggestions(iwasSuggestions);
       } else { // presumably a gene symbol
         // only need to search gene analysis
         matches['geneAnalysis'] = matchSorter(atlas > 0 ? geneAnalysisByAtlas[atlas] : geneAnalysis, searchQuery, {
@@ -436,6 +440,13 @@ function App() {
       }
       setSearchResults(paginateResults(matches, 10));
     }
+    setPagination({
+      GWAS: 0,
+      IWAS: 0,
+      geneticCorrelation: 0,
+      geneAnalysis: 0,
+      heritabilityEstimate: 0,
+    })
   }, [searchQuery, searchBy, atlas]);
 
   const animateIn = (c, cb = null) => {
@@ -590,7 +601,7 @@ function App() {
           <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`/data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} />
           <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`/data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
         </div>
-        <div className={atlas > 0 ? (phenotype.length === 0 ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh' }}>
+        <div className={atlas > 0 ? (phenotype.length === 0 ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh', minHeight: '630px' }}>
           <div style={phenotype.length === 0 ? { bottom: 'calc(30vw - 100px)' } : {}} className="-z-40 h-full relative">
             <div className={atlas > 0 && phenotype.length === 0 ? "-z-30 animate__animated animate__bounceInDown" : "max-w-lg -z-30 animate__animated animate__bounceInLeft"} ref={vtkContainerRef} />
           </div>
@@ -852,55 +863,34 @@ function App() {
               </thead>
               <tbody>
                 {searchResults[table][pagination[table]] === undefined ? <tr></tr> : searchResults[table][pagination[table]].map((x, i) => {
-                  const trClick = () => {
-                    let trValue = x.IDP;
-                    // setPhenotype(trValue);
-                    if (x.hasOwnProperty('trait')) {
-                      trValue = x.trait;
-                    }
-                    else if (x.hasOwnProperty('GENE')) {
-                      trValue = x.GENE;
-                    }
-                    else if (x.hasOwnProperty('ID')) {
-                      trValue = x.ID;
-                    }
-                    setSearchQuery(trValue);
-                    searchBoxRef.current.value = trValue;
-                    // const x_atlas = x.IDP.substring(1, x.IDP.indexOf('_'));
-                    // if (atlas === 0) {
-                    //   animateIn(x_atlas, () => greyOut(x.IDP));
-                    // } else {
-                    //   greyOut(x.IDP);
-                    // }
-                  }
                   switch (table) {
                     case 'GWAS':
                       return (
-                        <tr key={i} className="hover cursor-pointer" onClick={trClick}>
+                        <tr key={i} className="hover cursor-pointer">
                           <td>{x.IDP}</td><td>{x.ID}</td><td>{x.P}</td><td>{x.BETA}</td>
                         </tr>
                       );
                     case 'IWAS':
                       return (
-                        <tr key={i} className="hover cursor-pointer" onClick={trClick}>
+                        <tr key={i} className="hover cursor-pointer">
                           <td>{x.IDP}</td><td>{x.trait}</td><td>{x.Pvalue}</td><td>{x.ES}</td>
                         </tr>
                       );
                     case 'geneticCorrelation':
                       return (
-                        <tr key={i} className="hover cursor-pointer" onClick={trClick}>
+                        <tr key={i} className="hover cursor-pointer">
                           <td>{x.IDP}</td><td>{x.trait}</td><td>{x.gc_mean}</td><td>{x.gc_std}</td><td>{x.P}</td>
                         </tr>
                       );
                     case 'geneAnalysis':
                       return (
-                        <tr key={i} className="hover cursor-pointer" onClick={trClick}>
+                        <tr key={i} className="hover cursor-pointer">
                           <td>{x.IDP}</td><td>{x.GENE}</td><td>{x.CHR}</td><td>{x.START} - {x.STOP}</td><td>{x.NSNPS}</td><td>{x.NPARAM}</td><td>{x.N}</td><td>{x.ZSTAT}</td><td>{x.P}</td>
                         </tr>
                       );
                     case 'heritabilityEstimate':
                       return (
-                        <tr key={i} className="hover cursor-pointer" onClick={trClick}>
+                        <tr key={i} className="hover cursor-pointer">
                           <td>{x.IDP}</td><td>{x.Heritability}</td><td>{x.Pvalue}</td>
                         </tr>
                       );
