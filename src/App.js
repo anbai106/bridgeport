@@ -190,7 +190,9 @@ function App() {
         mapper.getInputData().getPointData().setGlobalIds(`C${c}_${i}`);
 
         resetCamera();
-        renderer.getActiveCamera().zoom(0.8);
+        if (!(atlas > 0 && phenotype.length > 0)) {
+          renderer.getActiveCamera().zoom(0.5);
+        }
         // let orientation = actor.getOrientation()
         // actor.setOrientation(orientation[0] + 20, orientation[1] + 25, 0);
         // actor.setOrientation(orientation[0], previewRotation, 0);
@@ -267,7 +269,6 @@ function App() {
       // }
     }
     renderWindow.getInteractor().onRightButtonPress(highlightCell);
-    // renderWindow.getInteractor().onLeftButtonPress(highlightCell);
   }; // end of renderAtlas
 
   window.onpopstate = (event) => {
@@ -663,7 +664,11 @@ function App() {
             <div className="relative">
               <button type="button" className={(searched ? "" : "hidden") + " absolute top-0 left-0 rounded-r-none btn btn-primary w-28"} onClick={(e) => {
                 e.preventDefault();
-                window.history.back();
+                window.history.pushState({
+                  searchQuery: searchQuery,
+                  searchBy: searchBy,
+                }, 'BRIDGEPORT', '/');
+                animateOut();
               }}>&larr; Back</button>
               <select className={"select select-bordered select-primary rounded-r-none absolute top-0 " + (searched ? "left-24" : "left-0")} onChange={x => setSearchBy(x.target.value)}>
                 <option value="">Search by</option>
