@@ -478,7 +478,7 @@ function App() {
     for (let i = 0; i < actors.length; i++) {
       const actor = actors[i]
       if (actor.getMapper().getInputData().getPointData().getGlobalIds() === upperTarget) {
-        actor.getProperty().setColor(153/255, 0, 0); // penn red
+        actor.getProperty().setColor(153 / 255, 0, 0); // penn red
         actor.getProperty().setOpacity(1);
       } else {
         actor.getProperty().setColor(0.5, 0.5, 0.5);
@@ -546,7 +546,27 @@ function App() {
 
   return (
     <div className="min-h-full">
-                                                                                                            {/* 15rem = height of footer */}
+
+      <div id="download" className="modal">
+        <div className="modal-box">
+          <div class="flex flex-col w-full">
+            <p className="mb-2">Download through your browser:</p>
+            <p><a href="/#" className="btn btn-primary btn-block">Download</a></p>
+            <div class="divider">OR</div>
+            <p className="mb-2">Download through the command line:</p>
+            <div class="mockup-code">
+              <pre data-prefix="$">
+                <code>curl http://localhost</code>
+              </pre>
+            </div>
+          </div>
+          <div className="modal-action">
+            <a href="/#" className="btn">Close</a>
+          </div>
+        </div>
+      </div>
+
+      {/* 15rem = height of footer */}
       <div className="grid main-container grid-cols-12 auto-rows-max gap-1 px-24 mb-4" style={!searched ? { minHeight: 'calc(100% - 15rem)' } : { minHeight: '100%' }}>
         <div className="col-span-12 py-4">
           <ul className="horizontal sm-menu menu items-stretch px-3 shadow-lg bg-base-100 rounded-box max-w-full sm:float-right overflow-visible">
@@ -556,35 +576,37 @@ function App() {
               </a>
             </li>
             <li>
-              {/* could be changed to <a> */}
-              <span>About</span>
-            </li>
-            <li>
-              <span>IWAS</span>
-            </li>
-            <li>
-              <span>GWAS</span>
-            </li>
-            <li>
               <div className="dropdown dropdown-end">
-                <button className="btn btn-ghost text-base font-normal normal-case" tabIndex="0">Download</button>
+                <button className="btn btn-ghost text-base font-normal normal-case" tabIndex="0">Download GWAS</button>
                 <ul tabIndex="0" className="p-2 shadow menu dropdown-content bg-base-100 rounded-box w-52">
                   {[32, 64, 128, 256, 512, 1024].map(i => (
                     <li key={i}>
-                      <a href="/">Download C{i}</a>
+                      <a href="#download">Download C{i}</a>
                     </li>
                   ))}
                 </ul>
               </div>
             </li>
             <li>
-              <span>Software</span>
+              <div className="dropdown dropdown-end">
+                <button className="btn btn-ghost text-base font-normal normal-case" tabIndex="0">Download MINA</button>
+                <ul tabIndex="0" className="p-2 shadow menu dropdown-content bg-base-100 rounded-box w-52">
+                  {[32, 64, 128, 256, 512, 1024].map(i => (
+                    <li key={i}>
+                      <a href="#download">Download C{i}</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </li>
             <li>
-              <span>Publication</span>
+              <span>Publications</span>
             </li>
             <li>
-              <span>iStaging</span>
+              <span>CBICA</span>
+            </li>
+            <li>
+              <span>Around</span>
             </li>
           </ul>
         </div>
