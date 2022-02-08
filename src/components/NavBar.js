@@ -5,9 +5,9 @@ const NavBar = () => {
         <div>
             <ul className="horizontal sm-menu menu items-stretch px-3 shadow-lg bg-base-100 rounded-box max-w-full sm:float-right overflow-visible">
                 <li className={["/publications", "/contributors"].includes(location.pathname) ? "" : "bordered"}>
-                    <a href={process.env.PUBLIC_URL}>
+                    <Link to="/">
                         BRIDGEPORT
-                    </a>
+                    </Link>
                 </li>
                 <li>
                     <div className="dropdown dropdown-end">
@@ -15,7 +15,7 @@ const NavBar = () => {
                         <ul tabIndex="0" className="p-0 shadow menu dropdown-content bg-base-100 rounded-box w-52">
                             {[32, 64, 128, 256, 512, 1024].map(i => (
                                 <li key={i}>
-                                    <a href="#download">Download C{i}</a>
+                                    <button onClick={() => document.getElementById('download').classList.toggle('modal-open')}>Download C{i}</button>
                                 </li>
                             ))}
                         </ul>
@@ -27,7 +27,7 @@ const NavBar = () => {
                         <ul tabIndex="0" className="p-0 shadow menu dropdown-content bg-base-100 rounded-box w-52">
                             {[32, 64, 128, 256, 512, 1024].map(i => (
                                 <li key={i}>
-                                    <a href="#download">Download C{i}</a>
+                                    <button onClick={() => document.getElementById('download').classList.toggle('modal-open')}>Download C{i}</button>
                                 </li>
                             ))}
                         </ul>
@@ -47,12 +47,12 @@ const NavBar = () => {
             </ul>
             <div id="download" className="modal">
                 <div className="modal-box">
-                    <div class="flex flex-col w-full">
+                    <div className="flex flex-col w-full">
                         {/* <p className="mb-2">Download through your browser:</p>
                         <p><a href="/#" className="btn btn-primary btn-block">Download</a></p>
-                        <div class="divider">OR</div>
+                        <div className="divider">OR</div>
                         <p className="mb-2">Download through the command line:</p>
-                        <div class="mockup-code">
+                        <div className="mockup-code">
                             <pre data-prefix="$">
                                 <code>curl http://localhost</code>
                             </pre>
@@ -61,7 +61,7 @@ const NavBar = () => {
                     </div>
                     <div className="modal-action">
                         {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-                        <a href="#" className="btn">Close</a>
+                        <button onClick={() => document.getElementById('download').classList.toggle('modal-open')} className="btn">Close</button>
                     </div>
                 </div>
             </div>
