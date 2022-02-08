@@ -1,18 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { matchSorter } from 'match-sorter'
 import md5 from 'md5'; // for setting color the same as in the python script
-// import vtkFullScreenRenderWindow from '@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow';
 import '@kitware/vtk.js/Rendering/Profiles/Geometry';
 import vtkGenericRenderWindow from '@kitware/vtk.js/Rendering/Misc/GenericRenderWindow';
 import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
 import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
 import vtkPolyDataReader from '@kitware/vtk.js/IO/Legacy/PolyDataReader';
 import vtkCellPicker from '@kitware/vtk.js/Rendering/Core/CellPicker';
-// import vtkTexture from '@kitware/vtk.js/Rendering/Core/Texture';
-// import vtkCoordinate from '@kitware/vtk.js/Rendering/Core/Coordinate';
-// import vtkSphereSource from '@kitware/vtk.js/Filters/Sources/SphereSource';
-// import vtkCamera from '@kitware/vtk.js/Rendering/Core/Camera';
 import 'animate.css';
+import NavBar from './components/NavBar';
+import Footer from './components/Footer';
 
 // data imports
 import GWAS from './data/GWAS.json';
@@ -68,6 +66,8 @@ const clinical_traits = [...new Set(IWAS.map(d => d.trait))];
 
 function App() {
   // global state
+  const params = useParams();
+  const navigate = useNavigate();
   const vtkContainerRef = useRef(null); // vtk figure
   const progressRef = useRef(null); // progress bar
   const searchBoxRef = useRef(null); // search box
@@ -218,7 +218,7 @@ function App() {
           genericRenderer.resize(); // necessary! to fix blurriness
         }
       }
-      reader.setUrl(`/data/MINA/C${c}/C${c}_C${i}.vtk`).then(functions[i - 1]);
+      reader.setUrl(`data/MINA/C${c}/C${c}_C${i}.vtk`).then(functions[i - 1]);
 
     }
 
@@ -246,6 +246,7 @@ function App() {
       setPhenotype(actorName);
       setSearchQuery(actorName);
       searchBoxRef.current.value = actorName;
+      navigate(`/IDP/${actorName}`);
 
 
       // get list of actors, set opacity to 0.5
@@ -271,60 +272,82 @@ function App() {
     renderWindow.getInteractor().onRightButtonPress(highlightCell);
   }; // end of renderAtlas
 
-  window.onpopstate = (event) => {
-    // fires when back / forward button is clicked
-    setSearchSuggestions([]);
-    if (event.state) {
-      setSearchQuery(event.state.searchQuery);
-      setSearchBy(event.state.searchBy);
-      setSearched(true);
-      searchBoxRef.current.value = event.state.searchQuery;
-      submitSearch(searchBoxRef.current, false);
-      // eslint-disable-next-line eqeqeq
-      if (event.state.atlas !== undefined && atlas != event.state.atlas) {
-        animateIn(event.state.atlas)
+  const animateIn = (c, cb = null) => {
+    setAtlas(c);
+    renderAtlas(c, cb);
+    setSearched(true);
+
+    vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomInLeft');
+    vtkContainerRef.current.classList.remove('col-span-12', 'sm:col-span-2');
+    vtkContainerRef.current.addEventListener('animationend', () => {
+      vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomInLeft');
+    }, { once: true });
+  }
+
+  const animateOut = () => {
+    setAtlas(0);
+    setPhenotype('');
+    setSearched(false);
+    vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomOutRight');
+    vtkContainerRef.current.addEventListener('animationend', () => {
+      vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomOutRight');
+      // vtkContainerRef.current.innerHTML = '';
+    }, { once: true });
+  }
+
+  const greyOut = (target) => { // make actors (except target) grayed out
+    const upperTarget = target.toUpperCase();
+    const actors = window.renderWindow.getRenderers()[0].getActors();
+    for (let i = 0; i < actors.length; i++) {
+      const actor = actors[i]
+      if (actor.getMapper().getInputData().getPointData().getGlobalIds() === upperTarget) {
+        actor.getProperty().setColor(153 / 255, 0, 0); // penn red
+        actor.getProperty().setOpacity(1);
+      } else {
+        actor.getProperty().setColor(0.5, 0.5, 0.5);
+        actor.getProperty().setOpacity(0.2);
       }
-    } else {
+    }
+    window.render();
+  }
+
+  const submitSearch = (searchBox) => {
+    setSearched(true);
+    setSearchSuggestions([]);
+    setSearchQuery(searchBox);
+    let searchedAtlas = atlas;
+    if (searchBox.toUpperCase().startsWith('C')) { // started typing IDP
+      if (searchBox.indexOf('_') > 0 && !isNaN(parseInt(searchBox.split('_')[1]))) { // typed full IDP
+        setPhenotype(searchBox.toUpperCase());
+        searchedAtlas = searchBox.substring(1, searchBox.indexOf('_')); // extract between C and _
+        if (searchedAtlas === atlas) {
+          greyOut(searchBox);
+        } else { // animate in different atlas
+          animateIn(searchedAtlas, () => greyOut(searchBox));
+        }
+      } else { // typed only Cx
+        setSearched(false);
+        return;
+      }
+    } else if (atlas > 0) { // only searching for IDP shows vtk figure, manhattan / qq plots
       animateOut();
     }
   }
 
-  useEffect(() => {
-    // fires to set initial history state, and each time submitSearch is called with pushHistory = true
-    // see https://stackoverflow.com/a/11844412/2624391
-    const p = window.location.pathname;
-    if (p === undefined || p === '/') {
-      return
+  const fancyPlaceholder = searchBy => {
+    switch (searchBy) {
+      case 'IDP':
+        return 'Type Cx_y to search for a phenotype';
+      case 'SNP':
+        return 'Search for a SNP e.g. rs123456789';
+      case 'IWAS':
+        return 'Search for a clinical trait e.g. AD';
+      case 'geneAnalysis':
+        return 'Search for a gene symbol e.g. RUNX2';
+      default:
+        return "Search for a variant, gene, or phenotype";
     }
-    setSearched(true);
-    const parts = p.split('/');
-    let sb = searchBy
-    let sq = ''
-    let a = atlas
-    if (parts.length === 3) {
-      sb = parts[1] === 'search' ? '' : parts[1]
-      sq = parts[2]
-      setSearchBy(sb);
-      setSearchQuery(sq);
-      searchBoxRef.current.value = sq;
-      submitSearch(searchBoxRef.current, false)
-    } else if (parts.length === 2 && p.toUpperCase().startsWith("/C")) {
-      const afterUnderscore = p.indexOf("_");
-      if (afterUnderscore === -1) {
-        a = parseInt(p.substring(2));
-      } else {
-        a = parseInt(p.substring(2, afterUnderscore))
-      }
-      view3D(a)
-    }
-    window.history.pushState({
-      searchQuery: sq,
-      searchBy: sb,
-      atlas: a,
-      phenotype: phenotype,
-    }, "BRIDGEPORT", "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }
 
   // search when search query changes
   useEffect(() => {
@@ -450,166 +473,38 @@ function App() {
     })
   }, [searchQuery, searchBy, atlas]);
 
-  const animateIn = (c, cb = null) => {
-    setAtlas(c);
-    renderAtlas(c, cb);
-    setSearched(true);
-
-    vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomInLeft');
-    vtkContainerRef.current.classList.remove('col-span-12', 'sm:col-span-2');
-    vtkContainerRef.current.addEventListener('animationend', () => {
-      vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomInLeft');
-    }, { once: true });
-  }
-
-  const animateOut = () => {
-    setAtlas(0);
-    setPhenotype('');
-    setSearched(false);
-    vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomOutRight');
-    vtkContainerRef.current.addEventListener('animationend', () => {
-      vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomOutRight');
-      // vtkContainerRef.current.innerHTML = '';
-    }, { once: true });
-  }
-
-  const greyOut = (target) => { // make actors (except target) grayed out
-    const upperTarget = target.toUpperCase();
-    const actors = window.renderWindow.getRenderers()[0].getActors();
-    for (let i = 0; i < actors.length; i++) {
-      const actor = actors[i]
-      if (actor.getMapper().getInputData().getPointData().getGlobalIds() === upperTarget) {
-        actor.getProperty().setColor(153 / 255, 0, 0); // penn red
-        actor.getProperty().setOpacity(1);
-      } else {
-        actor.getProperty().setColor(0.5, 0.5, 0.5);
-        actor.getProperty().setOpacity(0.2);
-      }
+  useEffect(() => {
+    if (params.atlas !== undefined) {
+      animateIn(params.atlas);
+      setPhenotype('');
+      setSearched(true);
+    } else if (params.IDP !== undefined) {
+      setSearchBy('IDP')
+      submitSearch(params.IDP)
+    } else if (params.query !== undefined) {
+      setSearchBy('');
+      submitSearch(params.query)
+    } else if (params.SNP !== undefined) {
+      setSearchBy('SNP')
+      submitSearch(params.SNP)
+    } else if (params.IWAS !== undefined) {
+      setSearchBy('IWAS')
+      submitSearch(params.IWAS)
+    } else if (params.geneAnalysis !== undefined) {
+      setSearchBy('geneAnalysis')
+      submitSearch(params.geneAnalysis)
     }
-    window.render();
-  }
-
-  const submitSearch = (searchBox, pushHistory = true) => {
-    setSearched(true);
-    setSearchSuggestions([]);
-    setSearchQuery(searchBox.value);
-    let searchedAtlas = atlas;
-    if (searchBox.value.toUpperCase().startsWith('C')) { // started typing IDP
-      if (searchBox.value.indexOf('_') > 0 && !isNaN(parseInt(searchBox.value.split('_')[1]))) { // typed full IDP
-        setPhenotype(searchBox.value.toUpperCase());
-        searchedAtlas = searchBox.value.substring(1, searchBox.value.indexOf('_')); // extract between C and _
-        if (searchedAtlas === atlas) {
-          greyOut(searchBox.value);
-        } else { // animate in different atlas
-          animateIn(searchedAtlas, () => greyOut(searchBox.value));
-        }
-      } else { // typed only Cx
-        pushHistory = false;
-        setSearched(false);
-      }
-    } else if (atlas > 0) { // only searching for IDP shows vtk figure, manhattan / qq plots
-      animateOut();
-    }
-    if (pushHistory) {
-      window.history.pushState({
-        searchQuery: searchBox.value,
-        searchBy: searchBy,
-      }, searchBox.value, `/${searchBy === '' ? 'search' : searchBy}/${searchBox.value}`);
-    }
-  }
-
-  const fancyPlaceholder = searchBy => {
-    switch (searchBy) {
-      case 'IDP':
-        return 'Type Cx_y to search for a phenotype';
-      case 'SNP':
-        return 'Search for a SNP e.g. rs123456789';
-      case 'IWAS':
-        return 'Search for a clinical trait e.g. AD';
-      case 'geneAnalysis':
-        return 'Search for a gene symbol e.g. RUNX2';
-      default:
-        return "Search for a variant, gene, or phenotype";
-    }
-  }
-
-  const view3D = (c) => {
-    animateIn(c);
-    setPhenotype('');
-    setSearched(true);
-    window.history.pushState({
-      searchQuery: '',
-      searchBy: '',
-      atlas: c,
-    }, "C" + c, "/C" + c);
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
 
   return (
     <div className="min-h-full">
 
-      <div id="download" className="modal">
-        <div className="modal-box">
-          <div class="flex flex-col w-full">
-            <p className="mb-2">Download through your browser:</p>
-            <p><a href="/#" className="btn btn-primary btn-block">Download</a></p>
-            <div class="divider">OR</div>
-            <p className="mb-2">Download through the command line:</p>
-            <div class="mockup-code">
-              <pre data-prefix="$">
-                <code>curl http://localhost</code>
-              </pre>
-            </div>
-          </div>
-          <div className="modal-action">
-            <a href="/#" className="btn">Close</a>
-          </div>
-        </div>
-      </div>
-
       {/* 15rem = height of footer */}
       <div className="grid main-container grid-cols-12 auto-rows-max gap-1 px-24 mb-4" style={!searched ? { minHeight: 'calc(100% - 15rem)' } : { minHeight: '100%' }}>
         <div className="col-span-12 py-4">
-          <ul className="horizontal sm-menu menu items-stretch px-3 shadow-lg bg-base-100 rounded-box max-w-full sm:float-right overflow-visible">
-            <li className="bordered">
-              <a href="/">
-                BRIDGEPORT
-              </a>
-            </li>
-            <li>
-              <div className="dropdown dropdown-end">
-                <button className="btn btn-ghost text-base font-normal normal-case" tabIndex="0">Download GWAS</button>
-                <ul tabIndex="0" className="p-2 shadow menu dropdown-content bg-base-100 rounded-box w-52">
-                  {[32, 64, 128, 256, 512, 1024].map(i => (
-                    <li key={i}>
-                      <a href="#download">Download C{i}</a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </li>
-            <li>
-              <div className="dropdown dropdown-end">
-                <button className="btn btn-ghost text-base font-normal normal-case" tabIndex="0">Download MINA</button>
-                <ul tabIndex="0" className="p-2 shadow menu dropdown-content bg-base-100 rounded-box w-52">
-                  {[32, 64, 128, 256, 512, 1024].map(i => (
-                    <li key={i}>
-                      <a href="#download">Download C{i}</a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </li>
-            <li>
-              <span>Publications</span>
-            </li>
-            <li>
-              <span>CBICA</span>
-            </li>
-            <li>
-              <span>Around</span>
-            </li>
-          </ul>
+          <NavBar />
         </div>
         <h1 className="col-span-12 text-3xl font-bold">BRIDGEPORT: Bridge knowledge across brain imaging, genomics, and clinical phenotypes</h1>
         <h4 className="col-span-12 text-base">MINA is a multi-scale atlas that parcellates the human brain by structural covariance in MRI data over the lifespan and a wide range of disease populations. BRIDGEPORT allows you to interactively browse the atlas in a 3D view and explore the phenotypic landscape and genetic architecture of the human brain. This web portal aims to foster multidisciplinary crosstalk across neuroimaging, machine learning, and genetic communities.</h4>
@@ -620,8 +515,8 @@ function App() {
             <button onClick={() => setChartType('manhattan')} className={chartType === 'manhattan' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>Manhattan</button>
             <button onClick={() => setChartType('qq')} className={chartType === 'qq' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>QQ</button>
           </div>
-          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`/data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} />
-          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`/data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
+          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} />
+          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
         </div>
         <div className={atlas > 0 ? (phenotype.length === 0 ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh', minHeight: '630px' }}>
           <div style={phenotype.length === 0 ? { bottom: 'calc(30vw - 100px)' } : {}} className="-z-40 h-full relative">
@@ -631,8 +526,8 @@ function App() {
         {Object.keys(vtkPreviews).map((c => {
           return (
             <div className={atlas > 0 ? "hidden" : "col-span-12 sm:col-span-2"} ref={vtkPreviews[c]} key={c}>
-              <img src={`/data/static/gifs/C${c}.gif`} className="w-full animate__animated animate__bounceInDown" alt={"C" + c} />
-              <button className="btn btn-primary btn-block btn-sm" onClick={e => view3D(c)}>3D View C{c}</button>
+              <img src={`data/static/gifs/C${c}.gif`} className="w-full animate__animated animate__bounceInDown" alt={"C" + c} />
+              <Link to={"/C/" + c} className="btn btn-primary btn-block btn-sm">3D View C{c}</Link>
             </div>
           )
         }))}
@@ -658,16 +553,13 @@ function App() {
           }
           setTypingTimer(null);
           const searchBox = e.target.querySelector('input');
-          submitSearch(searchBox)
+          navigate(`/${searchBy === '' ? 'search' : searchBy}/${searchBox.value}`);
         }}>
           <div className="form-control my-2">
             <div className="relative">
               <button type="button" className={(searched ? "" : "hidden") + " absolute top-0 left-0 rounded-r-none btn btn-primary w-28"} onClick={(e) => {
                 e.preventDefault();
-                window.history.pushState({
-                  searchQuery: searchQuery,
-                  searchBy: searchBy,
-                }, 'BRIDGEPORT', '/');
+                navigate('/');
                 animateOut();
               }}>&larr; Back</button>
               <select className={"select select-bordered select-primary rounded-r-none absolute top-0 " + (searched ? "left-24" : "left-0")} onChange={x => setSearchBy(x.target.value)}>
@@ -677,6 +569,7 @@ function App() {
                 <option value="geneAnalysis">Gene symbol</option>
                 <option value="IWAS">Clinical traits</option>
               </select>
+
               <input type="text" placeholder={fancyPlaceholder(searchBy)} className={(searched ? "pl-64" : "pl-40") + " input input-bordered input-primary w-full"} ref={searchBoxRef} onChange={x => {
                 // wait to see if the user has stopped typing
                 if (typingTimer !== null) {
@@ -701,7 +594,7 @@ function App() {
                       <button onClick={(e) => {
                         e.preventDefault();
                         searchBoxRef.current.value = x;
-                        submitSearch(searchBoxRef.current)
+                        navigate(`/${searchBy === '' ? 'search' : searchBy}/${x}`);
                       }
                       } className="btn btn-ghost text-left inline w-fit normal-case font-medium">{x}</button>
                     </li>
@@ -929,53 +822,7 @@ function App() {
           </div>
         ))}
       </div>
-      <footer className="p-10 footer bg-base-200 text-base-content min-h-60">
-        <div>
-          <span className="footer-title text-gray-500" style={{ opacity: 1 }}>Contact us</span>
-          <ul>
-            <li>CBICA</li>
-            <li>3700 Hamilton Walk</li>
-            <li>Richards Building, 7th Floor</li>
-            <li>Philadelphia, PA 19104</li>
-            <li><a className="link link-hover" href="tel:+1-215-746-4060">215-746-4060</a></li>
-            <li><a className="link link-hover" href="https://goo.gl/maps/xUxwxGxMNhzLjaLb6">Directions</a></li>
-          </ul>
-        </div>
-        <div>
-          <span className="footer-title text-gray-500" style={{ opacity: 1 }}>Links of interest</span>
-          <a target="_blank" rel="noreferrer" className="link link-hover" href="https://www.upenn.edu">University of Pennsylvania</a>
-          <a target="_blank" rel="noreferrer" className="link link-hover" href="https://www.med.upenn.edu">Perelman School of Medicine</a>
-          <a target="_blank" rel="noreferrer" className="link link-hover" href="https://cbica-wiki.uphs.upenn.edu/wiki/index.php/Main_Page">CBICA WIKI (for internal use)</a>
-        </div>
-        <div>
-          <span className="footer-title text-gray-500" style={{ opacity: 1 }}>Follow us</span>
-          <div className="grid grid-flow-col gap-4">
-            <a href="https://twitter.com/CBICAannounce" target="_blank" rel="noreferrer">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="fill-current hover:text-secondary">
-                <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"></path>
-              </svg>
-            </a>
-            <a href="https://www.youtube.com/channel/UC69N7TN5bH2onj4dHcPLxxA" target="_blank" rel="noreferrer">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="fill-current hover:text-secondary">
-                <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"></path>
-              </svg>
-            </a>
-            <a href="https://www.facebook.com/CBICAAnnounce/" target="_blank" rel="noreferrer">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="fill-current hover:text-secondary">
-                <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"></path>
-              </svg>
-            </a>
-          </div>
-        </div>
-        <div>
-          <img src="/data/static/svgs/UniversityofPennsylvania_FullLogo_CMYK_mono.svg" alt="University of Pennsylvania" className="max-h-100 max-w-xs static" />
-        </div>
-      </footer>
-      <footer className="px-10 py-4 border-t footer bg-base-200 text-base-content text-center border-base-300">
-        <div className="grid-flow-col" style={{ margin: '0 auto' }}>
-          &copy; The Trustees of the University of Pennsylvania | <a className="link" href="https://accessibility.web-resources.upenn.edu/get-help">Report Accessibility Issues and Get Help</a> | <a className="link" href="https://www.upenn.edu/about/privacy_policy">Privacy Policy</a>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 
