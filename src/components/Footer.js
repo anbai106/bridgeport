@@ -1,3 +1,4 @@
+import { Email } from "react-obfuscate-email";
 const Footer = () => {
     return (
         <div>
@@ -44,7 +45,7 @@ const Footer = () => {
             </footer>
             <footer className="px-10 py-4 border-t footer bg-base-200 text-base-content text-center border-base-300">
                 <div className="grid-flow-col" style={{ margin: '0 auto' }}>
-                    &copy; {new Date().getFullYear()} The Trustees of the University of Pennsylvania | <a className="link" href="https://accessibility.web-resources.upenn.edu/get-help">Report Accessibility Issues and Get Help</a> | <a className="link" href="https://www.upenn.edu/about/privacy_policy">Privacy Policy</a>
+                    &copy; {new Date().getFullYear()} The Trustees of the University of Pennsylvania | <Email className="link" email="www@cbica.upenn.edu">www@cbica.upenn.edu</Email> | <a className="link" href="https://www.upenn.edu/about/privacy_policy">Privacy Policy</a>
                 </div>
             </footer>
         </div>
