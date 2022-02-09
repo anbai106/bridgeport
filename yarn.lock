@@ -1407,10 +1407,10 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@kitware/vtk.js@^22.5.0":
-  version "22.5.0"
-  resolved "https://registry.yarnpkg.com/@kitware/vtk.js/-/vtk.js-22.5.0.tgz#d1756aadc1a1cbb79fcdc97f0ada2a133a7fff11"
-  integrity sha512-Dcz7MkXfFo2kXujPvORWp6cMqcEY6FQAxZbzKehN7Vse23+j+ah0A8PrrZLjjUx2r4qk9hjJvWfDTY76iG/FNg==
+"@kitware/vtk.js@^22.5.1":
+  version "22.5.1"
+  resolved "https://registry.yarnpkg.com/@kitware/vtk.js/-/vtk.js-22.5.1.tgz#1f57a5871b992e17a8959ba61c891da6a73909f1"
+  integrity sha512-DK/uxZv/jbOrB1xc3k8dOSI0uKBYKDbdO+/gAXEEiu8toTmzBz6yS0bMISOCLejBfQiywG9eVOvmm1hfvEKlqw==
   dependencies:
     "@babel/runtime" "7.16.7"
     blueimp-md5 "2.19.0"
