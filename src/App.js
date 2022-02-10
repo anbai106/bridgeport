@@ -493,6 +493,9 @@ function App() {
     } else if (params.geneAnalysis !== undefined) {
       setSearchBy('geneAnalysis')
       submitSearch(params.geneAnalysis)
+    } else { // presumably / 
+      animateOut();
+      setSearched(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
@@ -563,7 +566,6 @@ function App() {
               <button type="button" className={(searched ? "" : "hidden") + " sm:absolute sm:w-28 w-full top-0 left-0 sm:rounded-r-none sm:mb-0 mb-2 btn btn-primary"} onClick={(e) => {
                 e.preventDefault();
                 navigate('/');
-                animateOut();
               }}>&larr; Back</button>
               <select className={"select select-bordered select-primary sm:rounded-r-none sm:absolute sm:w-auto w-full mb-2 sm:mb-0 top-0 " + (searched ? "left-24" : "left-0")} onChange={x => setSearchBy(x.target.value)}>
                 <option value="">Search by</option>
@@ -599,7 +601,7 @@ function App() {
                         searchBoxRef.current.value = x;
                         navigate(`/${searchBy === '' ? 'search' : searchBy}/${x}`);
                       }
-                      } className="btn btn-ghost text-left inline w-fit normal-case font-medium">{x}</button>
+                      } className="btn-ghost text-left inline w-fit normal-case font-medium">{x}</button>
                     </li>
                   );
                 })}
