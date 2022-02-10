@@ -15,7 +15,7 @@ export default function Contributors() {
                         <div className="flex-row items-center space-x-4 card-body"><div>
                             <div className="avatar">
                                 <div className="rounded-full w-14 h-14 shadow">
-                                    <img src={process.env.PUBLIC_URL + "/data/static/MINA/C256/C256_rot-1.png"} alt="" />
+                                    <img src={process.env.PUBLIC_URL + "/data/png/C256/C256_rot-1.png"} alt="" />
                                 </div>
                             </div>
                         </div>
@@ -31,7 +31,7 @@ export default function Contributors() {
                         <div className="flex-row items-center space-x-4 card-body"><div>
                             <div className="avatar">
                                 <div className="rounded-full w-14 h-14 shadow">
-                                    <img src={process.env.PUBLIC_URL + "/data/static/MINA/C256/C256_rot-1.png"} alt="" />
+                                    <img src={process.env.PUBLIC_URL + "/data/png/C256/C256_rot-1.png"} alt="" />
                                 </div>
                             </div>
                         </div>
@@ -47,7 +47,7 @@ export default function Contributors() {
                         <div className="flex-row items-center space-x-4 card-body"><div>
                             <div className="avatar">
                                 <div className="rounded-full w-14 h-14 shadow">
-                                    <img src={process.env.PUBLIC_URL + "/data/static/MINA/C256/C256_rot-1.png"} alt="" />
+                                    <img src={process.env.PUBLIC_URL + "/data/png/C256/C256_rot-1.png"} alt="" />
                                 </div>
                             </div>
                         </div>
@@ -63,7 +63,7 @@ export default function Contributors() {
                         <div className="flex-row items-center space-x-4 card-body"><div>
                             <div className="avatar">
                                 <div className="rounded-full w-14 h-14 shadow">
-                                    <img src={process.env.PUBLIC_URL + "/data/static/MINA/C256/C256_rot-1.png"} alt="" />
+                                    <img src={process.env.PUBLIC_URL + "/data/png/C256/C256_rot-1.png"} alt="" />
                                 </div>
                             </div>
                         </div>

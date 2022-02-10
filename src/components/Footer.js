@@ -40,12 +40,12 @@ const Footer = () => {
                     </div>
                 </div>
                 <div>
-                    <img src="data/static/svgs/UniversityofPennsylvania_FullLogo_CMYK_mono.svg" alt="University of Pennsylvania" className="max-h-100 max-w-xs static" />
+                    <img src="data/svg/UniversityofPennsylvania_FullLogo_CMYK_mono.svg" alt="University of Pennsylvania" className="max-h-100 max-w-xs static" />
                 </div>
             </footer>
             <footer className="px-10 py-4 border-t footer bg-base-200 text-base-content text-center border-base-300">
-                <div className="grid-flow-col" style={{ margin: '0 auto' }}>
-                    &copy; {new Date().getFullYear()} The Trustees of the University of Pennsylvania | <Email className="link" email="www@cbica.upenn.edu">www@cbica.upenn.edu</Email> | <a className="link" href="https://www.upenn.edu/about/privacy_policy">Privacy Policy</a>
+                <div className="sm:grid-flow-col grid-flow-row" style={{ margin: '0 auto' }}>
+                    <span>&copy; {new Date().getFullYear()} The Trustees of the University of Pennsylvania</span> <span className="hidden sm:inline">|</span> <Email className="link" email="www@cbica.upenn.edu">www@cbica.upenn.edu</Email> <span className="hidden sm:inline">|</span> <a className="link" href="https://www.upenn.edu/about/privacy_policy">Privacy Policy</a>
                 </div>
             </footer>
         </div>

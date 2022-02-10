@@ -3,9 +3,9 @@ const NavBar = () => {
     const location = useLocation();
     return (
         <div>
-            <ul className="horizontal sm-menu menu items-stretch px-3 shadow-lg bg-base-100 rounded-box max-w-full sm:float-right overflow-visible">
+            <ul className="horizontal sm-menu menu items-stretch px-3 shadow-lg bg-base-100 rounded-box w-full sm:w-auto sm:float-right overflow-visible">
                 <li className={["/publications", "/contributors"].includes(location.pathname) ? "" : "bordered"}>
-                    <Link to="/">
+                    <Link to="/" className="sm:w-auto w-full">
                         BRIDGEPORT
                     </Link>
                 </li>
@@ -15,7 +15,7 @@ const NavBar = () => {
                         <ul tabIndex="0" className="p-0 shadow menu dropdown-content bg-base-100 rounded-box w-52">
                             {[32, 64, 128, 256, 512, 1024].map(i => (
                                 <li key={i}>
-                                    <button onClick={() => document.getElementById('download').classList.toggle('modal-open')}>Download C{i}</button>
+                                    <button className="sm:w-auto w-full" onClick={() => document.getElementById('download').classList.toggle('modal-open')}>Download C{i}</button>
                                 </li>
                             ))}
                         </ul>
@@ -27,20 +27,20 @@ const NavBar = () => {
                         <ul tabIndex="0" className="p-0 shadow menu dropdown-content bg-base-100 rounded-box w-52">
                             {[32, 64, 128, 256, 512, 1024].map(i => (
                                 <li key={i}>
-                                    <button onClick={() => document.getElementById('download').classList.toggle('modal-open')}>Download C{i}</button>
+                                    <button className="sm:w-auto w-full" onClick={() => document.getElementById('download').classList.toggle('modal-open')}>Download C{i}</button>
                                 </li>
                             ))}
                         </ul>
                     </div>
                 </li>
                 <li className={location.pathname === '/publications' ? "bordered" : ""}>
-                    <Link to="/publications">Publications</Link>
+                    <Link to="/publications" className="sm:w-auto w-full">Publications</Link>
                 </li>
                 <li className={location.pathname === '/contributors' ? "bordered" : ""}>
-                    <Link to="/contributors">Contributors</Link>
+                    <Link to="/contributors" className="sm:w-auto w-full">Contributors</Link>
                 </li>
                 <li>
-                    <a href="https://www.med.upenn.edu/cbica/">
+                    <a href="https://www.med.upenn.edu/cbica/"  className="sm:w-auto w-full">
                         CBICA
                     </a>
                 </li>

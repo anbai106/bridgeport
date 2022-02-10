@@ -13,11 +13,11 @@ import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 
 // data imports
-import GWAS from './data/GWAS.json';
-import IWAS from './data/IWAS.json';
-import heritabilityEstimate from './data/heritability_estimate.json';
-import geneticCorrelation from './data/genetic_correlation.json';
-import geneAnalysis from './data/gene_analysis.json';
+import GWAS from './data/json/GWAS.json';
+import IWAS from './data/json/IWAS.json';
+import heritabilityEstimate from './data/json/heritability_estimate.json';
+import geneticCorrelation from './data/json/genetic_correlation.json';
+import geneAnalysis from './data/json/gene_analysis.json';
 
 // organize data for later
 const GWASByAtlas = GWAS.reduce((acc, curr) => {
@@ -515,8 +515,8 @@ function App() {
             <button onClick={() => setChartType('manhattan')} className={chartType === 'manhattan' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>Manhattan</button>
             <button onClick={() => setChartType('qq')} className={chartType === 'qq' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>QQ</button>
           </div>
-          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`data/Plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} />
-          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`data/Plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
+          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`data/plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} />
+          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`data/plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
         </div>
         <div className={atlas > 0 ? (phenotype.length === 0 ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh', minHeight: '630px' }}>
           <div style={phenotype.length === 0 ? { bottom: 'calc(30vw - 100px)' } : {}} className="-z-40 h-full relative">
@@ -526,7 +526,10 @@ function App() {
         {Object.keys(vtkPreviews).map((c => {
           return (
             <div className={atlas > 0 ? "hidden" : "col-span-12 sm:col-span-2"} ref={vtkPreviews[c]} key={c}>
-              <img src={`data/static/gifs/C${c}.gif`} className="w-full animate__animated animate__bounceInDown" alt={"C" + c} />
+              <video autoPlay={true} loop={true} muted={true} playsInline={true} className="w-full animate__animated animate__bounceInDown">
+                <source src={`data/webm/C${c}.webm`} type="video/webm" />
+                <source src={`data/mp4/C${c}.mp4`} type="video/mp4" />
+              </video>
               <Link to={"/C/" + c} className="btn btn-primary btn-block btn-sm">3D View C{c}</Link>
             </div>
           )
@@ -557,12 +560,12 @@ function App() {
         }}>
           <div className="form-control my-2">
             <div className="relative">
-              <button type="button" className={(searched ? "" : "hidden") + " absolute top-0 left-0 rounded-r-none btn btn-primary w-28"} onClick={(e) => {
+              <button type="button" className={(searched ? "" : "hidden") + " sm:absolute sm:w-28 w-full top-0 left-0 sm:rounded-r-none sm:mb-0 mb-2 btn btn-primary"} onClick={(e) => {
                 e.preventDefault();
                 navigate('/');
                 animateOut();
               }}>&larr; Back</button>
-              <select className={"select select-bordered select-primary rounded-r-none absolute top-0 " + (searched ? "left-24" : "left-0")} onChange={x => setSearchBy(x.target.value)}>
+              <select className={"select select-bordered select-primary sm:rounded-r-none sm:absolute sm:w-auto w-full mb-2 sm:mb-0 top-0 " + (searched ? "left-24" : "left-0")} onChange={x => setSearchBy(x.target.value)}>
                 <option value="">Search by</option>
                 <option value="IDP">IDP</option>
                 <option value="SNP">SNP</option>
@@ -570,7 +573,7 @@ function App() {
                 <option value="IWAS">Clinical traits</option>
               </select>
 
-              <input type="text" placeholder={fancyPlaceholder(searchBy)} className={(searched ? "pl-64" : "pl-40") + " input input-bordered input-primary w-full"} ref={searchBoxRef} onChange={x => {
+              <input type="text" placeholder={fancyPlaceholder(searchBy)} className={(searched ? "sm:pl-64" : "sm:pl-40") + " input input-bordered input-primary w-full mb-2 sm:mb-0"} ref={searchBoxRef} onChange={x => {
                 // wait to see if the user has stopped typing
                 if (typingTimer !== null) {
                   clearTimeout(typingTimer);
@@ -582,7 +585,7 @@ function App() {
                 }, 900);
                 setTypingTimer(timeout);
               }} />
-              <button type="submit" className="absolute top-0 right-0 rounded-l-none btn btn-primary">
+              <button type="submit" className="sm:absolute top-0 right-0 sm:rounded-l-none sm:w-auto w-full btn btn-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="inline-block w-6 h-6 stroke-current">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>

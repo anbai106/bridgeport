@@ -29,13 +29,13 @@ def convertRange(val, old_min, old_max, new_min, new_max):
     return (((val - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
 
 def main(c):
-    os.makedirs(f"/Users/tim/repos/bridgeport/data/static/MINA/C{c}", exist_ok=True)
+    os.makedirs(f"/Users/tim/repos/bridgeport/data/png/C{c}", exist_ok=True)
     # there are 32 f's (the highest digit in hex) because a md5 hash is 32 characters long
     max_hash = 0xffffffffffffffffffffffffffffffff
 
     for rot in range(-180, 180, 1):
         print(c, rot)
-        out = f"/Users/tim/repos/bridgeport/data/static/MINA/C{c}/C{c}_rot{rot}.png"
+        out = f"/Users/tim/repos/bridgeport/data/png/C{c}/C{c}_rot{rot}.png"
         if os.path.exists(out):
             continue
         # Create the graphics structure. The renderer renders into the render
@@ -54,7 +54,7 @@ def main(c):
 
         for i in range(1, c + 1):
             reader = vtkPolyDataReader()
-            reader.SetFileName(f"/Users/tim/repos/bridgeport/data/MINA/C{c}/C{c}_C{i}.vtk")
+            reader.SetFileName(f"/Users/tim/repos/bridgeport/data/sourcedata/MINA/C{c}/C{c}_C{i}.vtk")
             reader.Update()
             polydata = reader.GetOutput()
             mapper = vtkPolyDataMapper()

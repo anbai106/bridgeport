@@ -40,17 +40,17 @@ def is_float(element):
         return False
 
 os.chdir("/Users/tim/repos/bridgeport/data")
-df = read_csv("Significnat_after_correction_thres_5e-8.tsv")
-write_json("GWAS.json", df)
+df = read_csv("sourcedata/Significnat_after_correction_thres_5e-8.tsv")
+write_json("json/GWAS.json", df)
 
-df = read_csv("Gene_analysis/bridgeport_significant_gene.tsv")
-write_json("gene_analysis.json", df)
+df = read_csv("sourcedata/Gene_analysis/bridgeport_significant_gene.tsv")
+write_json("json/gene_analysis.json", df)
 
-df = read_csv("Genetic_correlation/bridgeport_genetic_correlation.tsv")
-write_json("genetic_correlation.json", df)
+df = read_csv("sourcedata/Genetic_correlation/bridgeport_genetic_correlation.tsv")
+write_json("json/genetic_correlation.json", df)
 
-df = read_csv("Heritability_estimate/bridgeport_heritability_estimate.tsv")
-write_json("heritability_estimate.json", df)
+df = read_csv("sourcedata/Heritability_estimate/bridgeport_heritability_estimate.tsv")
+write_json("json/heritability_estimate.json", df)
 
-df = read_csv("IWAS/bridgeport_iwas.tsv")
-write_json("IWAS.json", df)
+df = read_csv("sourcedata/IWAS/bridgeport_iwas.tsv")
+write_json("json/IWAS.json", df)
