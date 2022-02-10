@@ -22,9 +22,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-utils/*.html
-
 # data
-/data
-!data/*.json
-!data/static/svgs
+/data/sourcedata
+/data/png
+# used in contributors page
+!/data/png/C256/C256_rot-1.png
