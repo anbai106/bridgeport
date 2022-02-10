@@ -11,11 +11,11 @@ const NavBar = () => {
                 </li>
                 <li>
                     <div className="dropdown dropdown-end">
-                        <button className="btn btn-link text-base text-base-content hover:bg-gray-200 hover:no-underline font-normal normal-case rounded-0" style={{height:'100%', borderRadius:"0px"}} tabIndex="0">Download GWAS</button>
-                        <ul tabIndex="0" className="p-0 shadow menu dropdown-content bg-base-100 rounded-box w-52">
+                        <button className="btn btn-link text-base text-base-content hover:bg-gray-200 hover:no-underline font-normal normal-case rounded-0" style={{ height: '100%', borderRadius: "0px" }} tabIndex="0">Download GWAS</button>
+                        <ul tabIndex="0" className="p-0 shadow menu dropdown-content bg-base-100 rounded-box w-max" style={{ padding: 0 }}>
                             {[32, 64, 128, 256, 512, 1024].map(i => (
-                                <li key={i}>
-                                    <button className="sm:w-auto w-full" onClick={() => document.getElementById('download').classList.toggle('modal-open')}>Download C{i}</button>
+                                <li key={i} className="p-0 m-0 w-full">
+                                    <button className="w-full" onClick={() => document.getElementById('download').classList.toggle('modal-open')}>Download C{i}</button>
                                 </li>
                             ))}
                         </ul>
@@ -23,11 +23,11 @@ const NavBar = () => {
                 </li>
                 <li>
                     <div className="dropdown dropdown-end">
-                        <button className="btn btn-link text-base text-base-content hover:bg-gray-200 h-100 hover:no-underline font-normal normal-case rounded-0" style={{height:'100%', borderRadius:"0px"}} tabIndex="0">Download MINA</button>
-                        <ul tabIndex="0" className="p-0 shadow menu dropdown-content bg-base-100 rounded-box w-52">
+                        <button className="btn btn-link text-base text-base-content hover:bg-gray-200 h-100 hover:no-underline font-normal normal-case rounded-0" style={{ height: '100%', borderRadius: "0px" }} tabIndex="0">Download MINA</button>
+                        <ul tabIndex="0" className="p-0 shadow menu dropdown-content bg-base-100 rounded-box w-max" style={{ padding: 0 }}>
                             {[32, 64, 128, 256, 512, 1024].map(i => (
-                                <li key={i}>
-                                    <button className="sm:w-auto w-full" onClick={() => document.getElementById('download').classList.toggle('modal-open')}>Download C{i}</button>
+                                <li key={i} className="p-0 m-0 w-full">
+                                    <button className="w-full" onClick={() => document.getElementById('download').classList.toggle('modal-open')}>Download C{i}</button>
                                 </li>
                             ))}
                         </ul>
@@ -40,7 +40,26 @@ const NavBar = () => {
                     <Link to="/contributors" className="sm:w-auto w-full">Contributors</Link>
                 </li>
                 <li>
-                    <a href="https://www.med.upenn.edu/cbica/"  className="sm:w-auto w-full">
+                    <div className="dropdown dropdown-end">
+                        <button className="btn btn-link text-base text-base-content hover:bg-gray-200 h-100 hover:no-underline font-normal normal-case rounded-0" style={{ height: '100%', borderRadius: "0px" }} tabIndex="0">Software</button>
+                        <ul tabIndex="0" className="p-0 shadow menu dropdown-content bg-base-100 rounded-box w-max" style={{ padding: 0 }}>
+                            <li className="px-4">
+                                <a href="https://pypi.org/project/sopnmf/" className="w-full">sopNMF</a>
+                            </li>
+                            <li className="px-4">
+                                <a href="http://www.clinica.run/" className="w-full">Clinica</a>
+                            </li>
+                            <li className="px-4">
+                                <a href="https://pypi.org/project/mlni/" className="w-full">MLNI</a>
+                            </li>
+                            <li className="px-4">
+                                <a href="https://www.med.upenn.edu/sbia/muse.html" className="w-full">MUSE</a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                <li>
+                    <a href="https://www.med.upenn.edu/cbica/" className="sm:w-auto w-full">
                         CBICA
                     </a>
                 </li>

@@ -288,6 +288,8 @@ function App() {
     setAtlas(0);
     setPhenotype('');
     setSearched(false);
+    setSearchSuggestions([]);
+    setSearchQuery('');
     vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomOutRight');
     vtkContainerRef.current.addEventListener('animationend', () => {
       vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomOutRight');
