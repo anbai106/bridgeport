@@ -331,9 +331,10 @@ function App() {
         setSearched(false);
         return;
       }
-    } else if (atlas > 0) { // only searching for IDP shows vtk figure, manhattan / qq plots
-      animateOut();
     }
+    // else if (atlas > 0) { // only searching for IDP shows vtk figure, manhattan / qq plots
+    //   animateOut();
+    // }
   }
 
   const fancyPlaceholder = searchBy => {
