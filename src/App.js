@@ -539,7 +539,7 @@ function App() {
             </div>
           )
         }))}
-        <p className={phenotype.length > 0 ? "col-span-12 text-right" : "hidden"}><button className="btn btn-link btn-sm" onClick={() => {
+        <p className={phenotype.length > 0 ? "col-span-12 text-right -mt-10 z-50" : "hidden"}><button className="btn btn-link btn-sm" onClick={() => {
           const actors = window.renderWindow.getRenderers()[0].getActors();
           for (let i = 0; i < actors.length; i++) {
             const disabled = actors[i];
@@ -570,11 +570,11 @@ function App() {
                 navigate('/');
               }}>&larr; Back</button>
               <select className={"select select-bordered select-primary sm:rounded-r-none sm:absolute sm:w-auto w-full mb-2 sm:mb-0 top-0 " + (searched ? "left-24" : "left-0")} onChange={x => setSearchBy(x.target.value)}>
-                <option value="">Search by</option>
-                <option value="IDP">IDP</option>
-                <option value="SNP">SNP</option>
-                <option value="geneAnalysis">Gene symbol</option>
-                <option value="IWAS">Clinical traits</option>
+                <option selected={searchBy === '' || searchBy === 'search'} value="">Search by</option>
+                <option selected={searchBy === 'IDP'} value="IDP">IDP</option>
+                <option selected={searchBy === 'SNP'} value="SNP">SNP</option>
+                <option selected={searchBy === 'geneAnalysis'} value="geneAnalysis">Gene symbol</option>
+                <option selected={searchBy === 'IWAS'} value="IWAS">Clinical traits</option>
               </select>
 
               <input type="text" placeholder={fancyPlaceholder(searchBy)} className={(searched ? "sm:pl-64" : "sm:pl-40") + " input input-bordered input-primary w-full mb-2 sm:mb-0"} ref={searchBoxRef} onChange={x => {
@@ -614,6 +614,7 @@ function App() {
         </form>
 
         {Object.keys(pagination).map(table => (
+          // since col-span-6 and col-span-12 classes are set via concatenation, purgeCSS won't see it so those classes have to be set in safelist
           <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
             <h4 className="font-bold text-xl inline">{table === 'geneAnalysis' ? 'Gene analysis' : table === 'heritabilityEstimate' ? 'Heritability estimate' : table === 'geneticCorrelation' ? 'Genetic correlation' : table}</h4>
             <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>

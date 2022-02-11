@@ -7,6 +7,9 @@ module.exports = {
   variants: {
     extend: {},
   },
+  options: {
+    safelist: ['col-span-6', 'col-span-12']
+  },
   plugins: [
     require('daisyui'),
   ],
