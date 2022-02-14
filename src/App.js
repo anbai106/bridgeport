@@ -555,7 +555,7 @@ function App() {
           window.render();
           window.genericRenderer.resize();
         }}>Reset selection</button>.</p>
-        <form className="col-span-12" onSubmit={e => {
+        <form className={atlas > 0 && phenotype.length === 0 ? "hidden" : "col-span-12"} onSubmit={e => {
           e.preventDefault();
           e.stopPropagation();
           if (typingTimer !== null) {

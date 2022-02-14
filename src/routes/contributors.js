@@ -20,7 +20,7 @@ export default function Contributors() {
                             </div>
                         </div>
                             <div>
-                                <h2 className="card-title">Junhao Wen</h2>
+                                <h2 className="card-title"><a href="https://www.junhaowen.com/#about">Junhao Wen</a></h2>
                                 <p className="text-base-content text-opacity-40">Co-founder and coordinator</p>
                             </div>
                         </div>
@@ -36,7 +36,7 @@ export default function Contributors() {
                             </div>
                         </div>
                             <div>
-                                <h2 className="card-title">Timothy Robert-Fitzgerald</h2>
+                                <h2 className="card-title"><a href="https://www.cs.oberlin.edu/~trobertf/">Timothy Robert-Fitzgerald</a></h2>
                                 <p className="text-base-content text-opacity-40">Developer and maintainer</p>
                             </div>
                         </div>
@@ -52,7 +52,7 @@ export default function Contributors() {
                             </div>
                         </div>
                             <div>
-                                <h2 className="card-title">Mark Bergman</h2>
+                                <h2 className="card-title"><a href="https://www.med.upenn.edu/sbia/mbergman.html">Mark Bergman</a></h2>
                                 <p className="text-base-content text-opacity-40">Maintainer</p>
                             </div>
                         </div>
@@ -68,7 +68,7 @@ export default function Contributors() {
                             </div>
                         </div>
                             <div>
-                                <h2 className="card-title">Christos Davatzikos</h2>
+                                <h2 className="card-title"><a href="https://www.med.upenn.edu/apps/faculty/index.php/g275/p32990">Christos Davatzikos</a></h2>
                                 <p className="text-base-content text-opacity-40">Co-founder</p>
                             </div>
                         </div>
