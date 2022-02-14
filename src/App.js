@@ -378,7 +378,7 @@ function App() {
           keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
-              return parseFloat(b.item.P) - parseFloat(a.item.P)
+              return parseFloat(a.item.P) - parseFloat(b.item.P)
             });
           }
         });
@@ -386,7 +386,7 @@ function App() {
           keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
-              return parseFloat(b.item.Pvalue) - parseFloat(a.item.Pvalue)
+              return parseFloat(a.item.Pvalue) - parseFloat(b.item.Pvalue)
             });
           }
         });
@@ -394,7 +394,7 @@ function App() {
           keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
-              return parseFloat(b.item.P) - parseFloat(a.item.P)
+              return parseFloat(a.item.P) - parseFloat(b.item.P)
             });
           }
         });
@@ -402,7 +402,7 @@ function App() {
           keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
-              return parseFloat(b.item.P) - parseFloat(a.item.P)
+              return parseFloat(a.item.P) - parseFloat(b.item.P)
             });
           }
         });
@@ -410,7 +410,7 @@ function App() {
           keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
-              return parseFloat(b.item.Heritability) - parseFloat(a.item.Heritability)
+              return parseFloat(a.item.Heritability) - parseFloat(b.item.Heritability)
             });
           }
         });
@@ -430,7 +430,7 @@ function App() {
           keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'ID' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
-              return parseFloat(b.item.P) - parseFloat(a.item.P)
+              return parseFloat(a.item.P) - parseFloat(b.item.P)
             })
           }
         });
@@ -441,7 +441,7 @@ function App() {
           keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'trait' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
-              return parseFloat(b.item.Pvalue) - parseFloat(a.item.Pvalue)
+              return parseFloat(a.item.Pvalue) - parseFloat(b.item.Pvalue)
             })
           }
         });
@@ -456,7 +456,7 @@ function App() {
           keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'GENE' }],
           sorter: rankedItems => {
             return rankedItems.sort((a, b) => {
-              return parseFloat(b.item.P) - parseFloat(a.item.P)
+              return parseFloat(a.item.P) - parseFloat(b.item.P)
             })
           }
         });
@@ -508,7 +508,7 @@ function App() {
     <div className="min-h-full">
 
       {/* 15rem = height of footer */}
-      <div className="grid main-container grid-cols-12 auto-rows-max gap-1 px-24 mb-4" style={!searched ? { minHeight: 'calc(100% - 15rem)' } : { minHeight: '100%' }}>
+      <div className="grid main-container grid-cols-12 auto-rows-max gap-1 px-2 sm:px-24 mb-4" style={!searched ? { minHeight: 'calc(100% - 15rem)' } : { minHeight: '100%' }}>
         <div className="col-span-12 py-4">
           <NavBar />
         </div>
@@ -524,11 +524,12 @@ function App() {
           <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`data/plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} />
           <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`data/plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
         </div>
-        <div className={atlas > 0 ? (phenotype.length === 0 ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh', minHeight: '630px' }}>
+        <div className={atlas > 0 ? (phenotype.length === 0 ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh' }}>
           <div style={phenotype.length === 0 ? { bottom: 'calc(30vw - 100px)' } : {}} className="-z-40 h-full relative">
             <div className={atlas > 0 && phenotype.length === 0 ? "-z-30 animate__animated animate__bounceInDown" : "max-w-lg -z-30 animate__animated animate__bounceInLeft"} ref={vtkContainerRef} />
           </div>
         </div>
+        <p className={atlas > 0 && phenotype.length === 0 ?  "-mb-4 -mt-8 z-50 text-right col-span-12 text-gray-500" : "hidden"}>Right click a parcellation to reveal statistics</p>
         {Object.keys(vtkPreviews).map((c => {
           return (
             <div className={atlas > 0 ? "hidden" : "col-span-12 sm:col-span-2"} ref={vtkPreviews[c]} key={c}>
@@ -540,7 +541,7 @@ function App() {
             </div>
           )
         }))}
-        <p className={phenotype.length > 0 ? "col-span-12 text-right -mt-10 z-50" : "hidden"}><button className="btn btn-link btn-sm" onClick={() => {
+        <p className={phenotype.length > 0 ? chartType === 'qq' ? "col-span-12 text-right z-50" : "col-span-12 text-right md:-mt-10 z-50" : "hidden"}><button className="btn btn-link btn-sm" onClick={() => {
           const actors = window.renderWindow.getRenderers()[0].getActors();
           for (let i = 0; i < actors.length; i++) {
             const disabled = actors[i];
@@ -613,6 +614,24 @@ function App() {
             </div>
           </div>
         </form>
+
+        <div class={searched ? "hidden" : "alert col-span-12 mb-8 shadow"}>
+          <div class="flex-1">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#2196f3" class="w-6 h-6 mx-2">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <label>
+              <h4>Bridgeport allows us to browse the results of PSC-wide association studies and genome-wide association studies. It currently supports the following searching criteria:</h4>
+              <ul className="list-disc text-sm text-base-content text-opacity-60 pl-8">
+                <li>MINA PSC: users can search by patterns of structural covariance (PSC) defined by MINA. One PSC represents a brain region that is driven by structural covariance in imaging data.</li>
+                <li>SNP: users can search by single nucleotide polymorphism. We currently only include common genetic variants of the human genome.</li>
+                <li>Gene symbol: users can search by gene symbols. Gene annotation is performed to map the SNPs from Phase 3 of 1000 Genomes to genes based on the GRCh37 build.</li>
+                <li>Clinical traits: users can search by clinical traits. We performed PSC-wide association studies and genetic correlation analyses for various clinical phenotypes.</li>
+                <li>MUSE: users can also search by traditional brain anatomy terminology, e.g., left hippocampus. Here we map each brain region of the MUSE atlas to the nearest MINA PSC.</li>
+              </ul>
+            </label>
+          </div>
+        </div>
 
         {Object.keys(pagination).map(table => (
           // since col-span-6 and col-span-12 classes are set via concatenation, purgeCSS won't see it so those classes have to be set in safelist
