@@ -1061,14 +1061,7 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@babel/runtime@^7.10.2", "@babel/runtime@^7.12.5", "@babel/runtime@^7.16.3", "@babel/runtime@^7.7.6", "@babel/runtime@^7.8.4", "@babel/runtime@^7.9.2":
-  version "7.17.0"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.17.0.tgz#b8d142fc0f7664fb3d9b5833fd40dcbab89276c0"
-  integrity sha512-etcO/ohMNaNA2UBdaXBBSX/3aEzFMRrVfaPv8Ptc0k+cWpWW0QFiGZ2XnVqQZI1Cf734LbPGmqBKWESfW4x/dQ==
-  dependencies:
-    regenerator-runtime "^0.13.4"
-
-"@babel/runtime@^7.11.2":
+"@babel/runtime@^7.10.2", "@babel/runtime@^7.11.2", "@babel/runtime@^7.12.5", "@babel/runtime@^7.16.3", "@babel/runtime@^7.7.6", "@babel/runtime@^7.8.4", "@babel/runtime@^7.9.2":
   version "7.17.2"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.17.2.tgz#66f68591605e59da47523c631416b18508779941"
   integrity sha512-hzeyJyMA1YGdJTuWU0e/j4wKXrU4OMFvY2MSlaI9B7VQb0r5cxTE3EAIS2Q7Tn2RIcDkRvTA/v2JsAEhxe99uw==
@@ -1402,10 +1395,10 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@kitware/vtk.js@^22.5.1":
-  version "22.5.1"
-  resolved "https://registry.yarnpkg.com/@kitware/vtk.js/-/vtk.js-22.5.1.tgz#1f57a5871b992e17a8959ba61c891da6a73909f1"
-  integrity sha512-DK/uxZv/jbOrB1xc3k8dOSI0uKBYKDbdO+/gAXEEiu8toTmzBz6yS0bMISOCLejBfQiywG9eVOvmm1hfvEKlqw==
+"@kitware/vtk.js@^22.5.2":
+  version "22.5.2"
+  resolved "https://registry.yarnpkg.com/@kitware/vtk.js/-/vtk.js-22.5.2.tgz#447149ba3e3500de5f9e0abee79dbc2df8dfc66f"
+  integrity sha512-PTfTwjKW2ik4wXMKqpxS4PdfE3QVtPdfZICDYT+s+KMCjmgrcCZXt297zGVLKXPKGkTi133dePXasspK/XcDQw==
   dependencies:
     "@babel/runtime" "7.16.7"
     blueimp-md5 "2.19.0"
