@@ -15,11 +15,14 @@ ReactDOM.render(
         <Route path="/search" element={<App />}>
           <Route path=":query" element={<App />} />
         </Route>
-        <Route path="/IDP" element={<App />}>
-          <Route path=":IDP" element={<App />} />
+        <Route path="/MINA" element={<App />}>
+          <Route path=":MINA" element={<App />} />
         </Route>
         <Route path="/SNP" element={<App />}>
           <Route path=":SNP" element={<App />} />
+        </Route>
+        <Route path="/MUSE" element={<App />}>
+          <Route path=":MUSE" element={<App />} />
         </Route>
         <Route path="/IWAS" element={<App />}>
           <Route path=":IWAS" element={<App />} />

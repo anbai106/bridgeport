@@ -1,9 +1,11 @@
 const fancyPlaceholder = searchBy => {
     switch (searchBy) {
-        case 'IDP':
+        case 'MINA':
             return 'Type Cx_y to search for a phenotype';
         case 'SNP':
             return 'Search for a SNP e.g. rs123456789';
+        case 'MUSE':
+            return 'Search for a ROI e.g. Right Hippocampus';
         case 'IWAS':
             return 'Search for a clinical trait e.g. AD';
         case 'geneAnalysis':

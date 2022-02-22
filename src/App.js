@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { matchSorter } from 'match-sorter'
+import axios from 'axios';
 import md5 from 'md5'; // for setting color the same as in the python script
 import '@kitware/vtk.js/Rendering/Profiles/Geometry';
 import vtkGenericRenderWindow from '@kitware/vtk.js/Rendering/Misc/GenericRenderWindow';
@@ -9,65 +10,42 @@ import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
 import vtkPolyDataReader from '@kitware/vtk.js/IO/Legacy/PolyDataReader';
 import vtkCellPicker from '@kitware/vtk.js/Rendering/Core/CellPicker';
 import 'animate.css';
+import paginateResults from './utils/paginateResults';
+import fancyPlaceholder from './utils/fancyPlaceholder';
 import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 
-// data imports
-import GWAS from './data/json/GWAS.json';
-import IWAS from './data/json/IWAS.json';
-import heritabilityEstimate from './data/json/heritability_estimate.json';
-import geneticCorrelation from './data/json/genetic_correlation.json';
-import geneAnalysis from './data/json/gene_analysis.json';
-
-// organize data for later
-const GWASByAtlas = GWAS.reduce((acc, curr) => {
-  const atlas = curr.IDP.substring(1, curr.IDP.indexOf('_'));
-  if (!(atlas in acc)) {
-    acc[atlas] = [];
-  }
-  acc[atlas].push(curr);
-  return acc;
-}, {});
-const IWASByAtlas = IWAS.reduce((acc, curr) => {
-  const atlas = curr.IDP.substring(1, curr.IDP.indexOf('_'));
-  if (!(atlas in acc)) {
-    acc[atlas] = [];
-  }
-  acc[atlas].push(curr);
-  return acc;
-}, {});
-const geneAnalysisByAtlas = geneAnalysis.reduce((acc, curr) => {
-  const atlas = curr.IDP.substring(1, curr.IDP.indexOf('_'));
-  if (!(atlas in acc)) {
-    acc[atlas] = [];
-  }
-  acc[atlas].push(curr);
-  return acc;
-}, {});
-const geneticCorrelationByAtlas = geneticCorrelation.reduce((acc, curr) => {
-  const atlas = curr.IDP.substring(1, curr.IDP.indexOf('_'));
-  if (!(atlas in acc)) {
-    acc[atlas] = [];
-  }
-  acc[atlas].push(curr);
-  return acc;
-}, {});
-const heritabilityEstimateByAtlas = heritabilityEstimate.reduce((acc, curr) => {
-  const atlas = curr.IDP.substring(1, curr.IDP.indexOf('_'));
-  if (!(atlas in acc)) {
-    acc[atlas] = [];
-  }
-  acc[atlas].push(curr);
-  return acc;
-}, {});
-const max_hash = 0xffffffffffffffffffffffffffffffff;
-const clinical_traits = [...new Set(IWAS.map(d => d.trait))];
-
 
 function App() {
-  // global state
+  /**
+   * Global state
+   */
+  // react router setup
   const params = useParams();
   const navigate = useNavigate();
+
+  let initialSearchBy = "";
+  let initialSearchQuery = "";
+  if (params.query !== undefined) {
+    initialSearchQuery = params.query
+  } else if (params.MINA !== undefined) {
+    initialSearchBy = "MINA"
+    initialSearchQuery = params.MINA
+  } else if (params.MUSE !== undefined) {
+    initialSearchBy = "MUSE"
+    initialSearchQuery = params.MUSE
+  } else if (params.SNP !== undefined) {
+    initialSearchBy = "SNP"
+    initialSearchQuery = params.SNP
+  } else if (params.IWAS !== undefined) {
+    initialSearchBy = "IWAS"
+    initialSearchQuery = params.IWAS
+  } else if (params.geneAnalysis !== undefined) {
+    initialSearchBy = "geneAnalysis"
+    initialSearchQuery = params.geneAnalysis
+  }
+
+  // DOM elements
   const vtkContainerRef = useRef(null); // vtk figure
   const progressRef = useRef(null); // progress bar
   const searchBoxRef = useRef(null); // search box
@@ -79,210 +57,42 @@ function App() {
     512: useRef(null),
     1024: useRef(null),
   };
+  // state
   const [searched, setSearched] = useState(false); // whether the search form's been submitted
-  const [searchBy, setSearchBy] = useState(''); // data table to search through
-  const [searchQuery, setSearchQuery] = useState(''); // the actual query
+  const [searchBy, setSearchBy] = useState(initialSearchBy); // data table to search through
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery); // the actual query
   const [searchSuggestions, setSearchSuggestions] = useState([]); // suggestions for the search query
   const [searchResults, setSearchResults] = useState({ // results of the search
     // double arrays for pagination
     'GWAS': [[]],
     'IWAS': [[]],
+    'MUSE': [[]],
     'geneticCorrelation': [[]],
     'geneAnalysis': [[]],
     'heritabilityEstimate': [[]],
   });
-  const [phenotype, setPhenotype] = useState(''); // aka IDP e.g. C32_1
+  const [phenotype, setPhenotype] = useState(''); // aka MINA e.g. C32_1
   const [atlas, setAtlas] = useState(0); // the 32 in C32_1
   const [typingTimer, setTypingTimer] = useState(null); // auto search timer for suggestions
   const [chartType, setChartType] = useState('manhattan'); // or 'qq'
   const [pagination, setPagination] = useState({ // pagination for the data table
     GWAS: 0,
     IWAS: 0,
+    MUSE: 0,
     geneticCorrelation: 0,
     geneAnalysis: 0,
     heritabilityEstimate: 0,
   });
+  const [GWAS, setGWAS] = useState([]);
+  const [IWAS, setIWAS] = useState([]);
+  const [MUSE, setMUSE] = useState([]);
+  const [heritabilityEstimate, setHeritabilityEstimate] = useState([]);
+  const [geneticCorrelation, setGeneticCorrelation] = useState([]);
+  const [geneAnalysis, setGeneAnalysis] = useState([]);
 
-  // helpers
-  const paginateResults = (results, perPage) => {
-    const paginatedResults = {
-      // double arrays for pagination
-      'GWAS': [[]],
-      'IWAS': [[]],
-      'geneticCorrelation': [[]],
-      'geneAnalysis': [[]],
-      'heritabilityEstimate': [[]],
-    };
-    for (const k in results) {
-      if (Object.hasOwnProperty.call(results, k)) {
-        let page = 0;
-        for (let i = 0; i < results[k].length; i++) {
-          if (paginatedResults[k][page] === undefined) {
-            paginatedResults[k][page] = [];
-          }
-          const searchResult = results[k][i];
-          paginatedResults[k][page].push(searchResult);
-          if (paginatedResults[k][page].length === perPage) {
-            page += 1;
-          }
-        }
-      }
-    }
-    return paginatedResults;
-  };
-
-  const renderAtlas = (c, cb = null) => {
-    vtkContainerRef.current.innerHTML = '';
-    progressRef.current.classList.remove('hidden');
-    progressRef.current.classList.add("progress", "progress-secondary", "z-50", "col-span-12", "w-full");
-
-    // ----------------------------------------------------------------------------
-    // Standard rendering code setup
-    // ----------------------------------------------------------------------------
-
-    // const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
-    //   rootContainer: vtkContainerRef.current,
-    // });
-    const genericRenderer = vtkGenericRenderWindow.newInstance();
-
-    const renderer = genericRenderer.getRenderer();
-    const renderWindow = genericRenderer.getRenderWindow();
-    renderer.setBackground(1, 1, 1);
-    window.genericRenderer = genericRenderer;
-    window.renderWindow = renderWindow;
-
-    const resetCamera = renderer.resetCamera;
-    const render = renderWindow.render;
-    window.render = render;
-
-    const reader = vtkPolyDataReader.newInstance();
-    const functions = [];
-    for (let i = 1; i <= c; i++) {
-      functions[i - 1] = () => {
-        const polydata = reader.getOutputData();
-        if (polydata === undefined) { // sometimes the browser will fail to load (as we're requesting files very quickly)
-          console.error('failed to load mesh', i);
-          if (functions[i - 1] !== undefined) {
-            setTimeout(() => {
-              functions[i - 1]();
-              functions[i - 1] = undefined; // only retry once
-            }, 100);
-          }
-          return;
-        }
-        const mapper = vtkMapper.newInstance();
-        const actor = vtkActor.newInstance();
-
-        actor.setMapper(mapper);
-        mapper.setInputData(polydata);
-
-        // actor.getProperty().setEdgeVisibility(true);
-        // actor.getProperty().setLineWidth(2);
-        // actor.getProperty().setEdgeColor(255 / 255, 87 / 255, 36 / 255);
-        // actor.getProperty().setRepresentationToPoints();
-        const h1 = parseInt(md5(`C${c}_${i}_r`), 16) / max_hash;
-        const h2 = parseInt(md5(`C${c}_${i}_g`), 16) / max_hash;
-        const h3 = parseInt(md5(`C${c}_${i}_b`), 16) / max_hash;
-        actor.getProperty().setColor(h1, h2, h3);
-
-        renderer.addActor(actor);
-        // set id for reference later
-        mapper.getInputData().getPointData().setGlobalIds(`C${c}_${i}`);
-
-        resetCamera();
-        if (!(atlas > 0 && phenotype.length > 0)) {
-          renderer.getActiveCamera().zoom(0.5);
-        }
-        // let orientation = actor.getOrientation()
-        // actor.setOrientation(orientation[0] + 20, orientation[1] + 25, 0);
-        // actor.setOrientation(orientation[0], previewRotation, 0);
-        // actor.setPosition(0, 350 + ((1/c)*1000), 0);
-        progressRef.current.dataset.value++;
-        progressRef.current.value = (progressRef.current.dataset.value / c) * 100;
-        // make sure types match
-        if (parseInt(progressRef.current.dataset.value) === parseInt(c)) {
-          // vtkContainerRef.current.children[0].remove()
-          vtkContainerRef.current.innerHTML = '';
-          // window[`actor${c}`] = actor;
-          genericRenderer.setContainer(vtkContainerRef.current);
-          render();
-          if (cb !== null) {
-            cb();
-          }
-          // const focalPoint = camera.getFocalPoint();
-          // camera.setFocalPoint(focalPoint[0], -75 - ((1/c) * 500), focalPoint[2]);
-          progressRef.current.value = 0;
-          progressRef.current.dataset.value = 0;
-          progressRef.current.classList.add('hidden');
-          progressRef.current.classList.remove("progress", "progress-secondary", "z-50", "col-span-12", "w-full");
-          genericRenderer.resize(); // necessary! to fix blurriness
-        }
-      }
-      reader.setUrl(`data/MINA/C${c}/C${c}_C${i}.vtk`).then(functions[i - 1]);
-
-    }
-
-    // https://kitware.github.io/vtk-js/examples/CellPicker.html
-    const highlightCell = (e) => {
-      if (renderer !== e.pokedRenderer) {
-        return;
-      }
-
-      const pos = e.position;
-      const picker = vtkCellPicker.newInstance();
-      const camera = renderer.getActiveCamera()
-      picker.setTolerance(0);
-      picker.pick([pos.x, pos.y, 0], renderer);
-      if (picker.getActors().length === 0) {
-        return;
-      }
-      const cameraPos = camera.getPosition();
-      const largestDim = cameraPos.reduce((iMax, x, i, arr) => x > arr[iMax] ? i : iMax, 0) * 2
-      const sortedByDim = picker.getActors().sort((a, b) => (a.getBounds()[largestDim + 1] + a.getBounds()[largestDim]) - (b.getBounds()[largestDim + 1] + b.getBounds()[largestDim])).reverse()
-      // const actor = allActors[c][JSON.stringify(sortedByDim[0].getMapper().getInputData().getBounds())];
-      const allActors = renderWindow.getRenderers()[0].getActors();
-      const actor = allActors.find(a => a.getMapper().getInputData().getPointData().getGlobalIds() === sortedByDim[0].getMapper().getInputData().getPointData().getGlobalIds());
-      const actorName = actor.getMapper().getInputData().getPointData().getGlobalIds()
-      setPhenotype(actorName);
-      setSearchQuery(actorName);
-      searchBoxRef.current.value = actorName;
-      navigate(`/IDP/${actorName}`);
-
-
-      // get list of actors, set opacity to 0.5
-      const actors = renderer.getActors();
-      for (let i = 0; i < actors.length; i++) {
-        const actor = actors[i];
-        actor.getProperty().setColor(0.5, 0.5, 0.5);
-        actor.getProperty().setOpacity(0.2);
-      }
-
-      sortedByDim[0].getProperty().setColor(255 / 255, 0 / 255, 0 / 255);
-      sortedByDim[0].getProperty().setOpacity(1);
-      setAtlas(c)
-      window.render(); // necessary to actually change color
-      // if (vtkContainerRefs[c].current.parentNode.className === 'col-span-12') {
-      //   vtkContainerRefs[c].current.parentNode.className = 'col-span-4'
-      // }
-      // if (vtkContainerRefs[c].current.parentNode.className === 'col-span-12 sm:col-span-2') {
-      //   animateIn(c, vtkContainerRefs[c].current.parentNode.children[1])
-      //   setSearchQuery(`C${c}`)
-      // }
-    }
-    renderWindow.getInteractor().onRightButtonPress(highlightCell);
-  }; // end of renderAtlas
-
-  const animateIn = (c, cb = null) => {
-    setAtlas(c);
-    renderAtlas(c, cb);
-    setSearched(true);
-
-    vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomInLeft');
-    vtkContainerRef.current.classList.remove('col-span-12', 'sm:col-span-2');
-    vtkContainerRef.current.addEventListener('animationend', () => {
-      vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomInLeft');
-    }, { once: true });
-  }
+  /**
+   * helpers
+   */
 
   const animateOut = () => {
     setAtlas(0);
@@ -313,194 +123,426 @@ function App() {
     window.render();
   }
 
-  const submitSearch = (searchBox) => {
-    setSearched(true);
-    setSearchSuggestions([]);
-    setSearchQuery(searchBox);
-    let searchedAtlas = atlas;
-    if (searchBox.toUpperCase().startsWith('C')) { // started typing IDP
-      if (searchBox.indexOf('_') > 0 && !isNaN(parseInt(searchBox.split('_')[1]))) { // typed full IDP
-        setPhenotype(searchBox.toUpperCase());
-        searchedAtlas = searchBox.substring(1, searchBox.indexOf('_')); // extract between C and _
-        if (searchedAtlas === atlas) {
-          greyOut(searchBox);
-        } else { // animate in different atlas
-          animateIn(searchedAtlas, () => greyOut(searchBox));
-        }
-      } else { // typed only Cx
-        setSearched(false);
-        return;
-      }
+  /**
+   * main search function
+   * @param {string} q query the query to search for
+   * @param {boolean} suggestionsOnly whether to only set suggestions
+   * @returns 
+   */
+  const submitSearch = (q = null, suggestionsOnly = false) => {
+    // don't actually start searching until all data loaded
+    if (GWAS.length === 0 || IWAS.length === 0 || MUSE.length === 0 || heritabilityEstimate.length === 0 || geneAnalysis.length === 0 || geneticCorrelation.length === 0) {
+      return;
     }
-    // else if (atlas > 0) { // only searching for IDP shows vtk figure, manhattan / qq plots
-    //   animateOut();
-    // }
-  }
-
-  const fancyPlaceholder = searchBy => {
-    switch (searchBy) {
-      case 'IDP':
-        return 'Type Cx_y to search for a phenotype';
-      case 'SNP':
-        return 'Search for a SNP e.g. rs123456789';
-      case 'IWAS':
-        return 'Search for a clinical trait e.g. AD';
-      case 'geneAnalysis':
-        return 'Search for a gene symbol e.g. RUNX2';
-      default:
-        return "Search for a variant, gene, or phenotype";
+    if (q === null) {
+      q = searchQuery
     }
-  }
+    if (q.length === 0 || searched) {
+      return;
+    }
+    console.log('searching for', q)
 
-  // search when search query changes
-  useEffect(() => {
     const includesAndStartsWith = (str, arr) => {
       for (let i = 0; i < arr.length; i++) {
-        if (str.toUpperCase().startsWith(arr[i].toUpperCase())) {
+        if (str.toUpperCase().lastIndexOf(arr[i].toUpperCase(), 0) === 0) {
           return true;
         }
       }
       return false;
     }
+
+    const renderAtlas = (c, cb = null) => {
+      vtkContainerRef.current.innerHTML = '';
+      progressRef.current.classList.remove('hidden');
+      progressRef.current.classList.add("progress", "progress-secondary", "z-50", "col-span-12", "w-full");
+
+      // ----------------------------------------------------------------------------
+      // Standard rendering code setup
+      // ----------------------------------------------------------------------------
+
+      // const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
+      //   rootContainer: vtkContainerRef.current,
+      // });
+      const genericRenderer = vtkGenericRenderWindow.newInstance();
+
+      const renderer = genericRenderer.getRenderer();
+      const renderWindow = genericRenderer.getRenderWindow();
+      renderer.setBackground(1, 1, 1);
+      window.genericRenderer = genericRenderer;
+      window.renderWindow = renderWindow;
+
+      const resetCamera = renderer.resetCamera;
+      const render = renderWindow.render;
+      window.render = render;
+
+      const reader = vtkPolyDataReader.newInstance();
+      const functions = [];
+      for (let i = 1; i <= c; i++) {
+        functions[i - 1] = () => {
+          const polydata = reader.getOutputData();
+          if (polydata === undefined) { // sometimes the browser will fail to load (as we're requesting files very quickly)
+            console.error('failed to load mesh', i);
+            if (functions[i - 1] !== undefined) {
+              setTimeout(() => {
+                functions[i - 1]();
+                functions[i - 1] = undefined; // only retry once
+              }, 100);
+            }
+            return;
+          }
+          const mapper = vtkMapper.newInstance();
+          const actor = vtkActor.newInstance();
+
+          actor.setMapper(mapper);
+          mapper.setInputData(polydata);
+
+          // actor.getProperty().setEdgeVisibility(true);
+          // actor.getProperty().setLineWidth(2);
+          // actor.getProperty().setEdgeColor(255 / 255, 87 / 255, 36 / 255);
+          // actor.getProperty().setRepresentationToPoints();
+          const h1 = parseInt(md5(`C${c}_${i}_r`), 16) / 0xffffffffffffffffffffffffffffffff;
+          const h2 = parseInt(md5(`C${c}_${i}_g`), 16) / 0xffffffffffffffffffffffffffffffff;
+          const h3 = parseInt(md5(`C${c}_${i}_b`), 16) / 0xffffffffffffffffffffffffffffffff;
+          actor.getProperty().setColor(h1, h2, h3);
+
+          renderer.addActor(actor);
+          // set id for reference later
+          mapper.getInputData().getPointData().setGlobalIds(`C${c}_${i}`);
+
+          resetCamera();
+          if (!(atlas > 0 && phenotype.length > 0)) {
+            renderer.getActiveCamera().zoom(0.5);
+          }
+          // let orientation = actor.getOrientation()
+          // actor.setOrientation(orientation[0] + 20, orientation[1] + 25, 0);
+          // actor.setOrientation(orientation[0], previewRotation, 0);
+          // actor.setPosition(0, 350 + ((1/c)*1000), 0);
+          progressRef.current.dataset.value++;
+          progressRef.current.value = (progressRef.current.dataset.value / c) * 100;
+          // make sure types match
+          if (parseInt(progressRef.current.dataset.value) === parseInt(c)) {
+            // vtkContainerRef.current.children[0].remove()
+            vtkContainerRef.current.innerHTML = '';
+            // window[`actor${c}`] = actor;
+            genericRenderer.setContainer(vtkContainerRef.current);
+            render();
+            if (cb !== null) {
+              cb();
+            }
+            // const focalPoint = camera.getFocalPoint();
+            // camera.setFocalPoint(focalPoint[0], -75 - ((1/c) * 500), focalPoint[2]);
+            progressRef.current.value = 0;
+            progressRef.current.dataset.value = 0;
+            progressRef.current.classList.add('hidden');
+            progressRef.current.classList.remove("progress", "progress-secondary", "z-50", "col-span-12", "w-full");
+            genericRenderer.resize(); // necessary! to fix blurriness
+          }
+        }
+        reader.setUrl(`data/MINA/C${c}/C${c}_C${i}.vtk`).then(functions[i - 1]);
+
+      }
+
+      // https://kitware.github.io/vtk-js/examples/CellPicker.html
+      const highlightCell = (e) => {
+        if (renderer !== e.pokedRenderer) {
+          return;
+        }
+
+        const pos = e.position;
+        const picker = vtkCellPicker.newInstance();
+        const camera = renderer.getActiveCamera()
+        picker.setTolerance(0);
+        picker.pick([pos.x, pos.y, 0], renderer);
+        if (picker.getActors().length === 0) {
+          return;
+        }
+        const cameraPos = camera.getPosition();
+        const largestDim = cameraPos.reduce((iMax, x, i, arr) => x > arr[iMax] ? i : iMax, 0) * 2
+        const sortedByDim = picker.getActors().sort((a, b) => (a.getBounds()[largestDim + 1] + a.getBounds()[largestDim]) - (b.getBounds()[largestDim + 1] + b.getBounds()[largestDim])).reverse()
+        // const actor = allActors[c][JSON.stringify(sortedByDim[0].getMapper().getInputData().getBounds())];
+        const allActors = renderWindow.getRenderers()[0].getActors();
+        const actor = allActors.find(a => a.getMapper().getInputData().getPointData().getGlobalIds() === sortedByDim[0].getMapper().getInputData().getPointData().getGlobalIds());
+        const actorName = actor.getMapper().getInputData().getPointData().getGlobalIds()
+        setPhenotype(actorName);
+        setSearchQuery(actorName);
+        searchBoxRef.current.value = actorName;
+        navigate(`/MINA/${actorName}`);
+
+
+        // get list of actors, set opacity to 0.5
+        const actors = renderer.getActors();
+        for (let i = 0; i < actors.length; i++) {
+          const actor = actors[i];
+          actor.getProperty().setColor(0.5, 0.5, 0.5);
+          actor.getProperty().setOpacity(0.2);
+        }
+
+        sortedByDim[0].getProperty().setColor(255 / 255, 0 / 255, 0 / 255);
+        sortedByDim[0].getProperty().setOpacity(1);
+        setAtlas(c)
+        window.render(); // necessary to actually change color
+      }
+      renderWindow.getInteractor().onRightButtonPress(highlightCell);
+    }; // end of renderAtlas
+
+    const renderMUSE = (roi) => {
+      setAtlas(1);
+
+      vtkContainerRef.current.innerHTML = '';
+      vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomInLeft', 'grid', 'grid-cols-12');
+      vtkContainerRef.current.parentNode.style = 'bottom: initial;';
+      vtkContainerRef.current.classList.remove('col-span-12', 'sm:col-span-2');
+      vtkContainerRef.current.addEventListener('animationend', () => {
+        vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomInLeft');
+        vtkContainerRef.current.classList.add('grid', 'grid-cols-12');
+      }, { once: true });
+
+      // create 6 renderers for each of the MINA atlases
+      [32, 64, 128, 256, 512, 1024].forEach(c => {
+        const vtkPanel = document.createElement('div');
+        vtkPanel.classList.add('col-span-12', 'sm:col-span-2');
+        vtkPanel.style.zIndex = 100;
+        vtkContainerRef.current.appendChild(vtkPanel);
+        const genericRenderer = vtkGenericRenderWindow.newInstance();
+        const renderer = genericRenderer.getRenderer();
+        const renderWindow = genericRenderer.getRenderWindow();
+        const render = renderWindow.render;
+        renderer.setBackground(1, 1, 1);
+        genericRenderer.setContainer(vtkPanel);
+
+        const reader = vtkPolyDataReader.newInstance();
+        // load MINA parcellation associated with MUSE ROI
+        const k = `MINA_C${c}_mapped`;
+        const fullC = `C${c}_${roi[k]}`;
+        reader.setUrl(`/bridgeport/data/MINA/C${c}/${fullC}.vtk`).then(() => {
+          const polydata = reader.getOutputData();
+          const mapper = vtkMapper.newInstance();
+          const actor = vtkActor.newInstance();
+          actor.setMapper(mapper);
+          mapper.setInputData(polydata);
+          actor.getProperty().setColor(1, 0, 0);
+          renderer.addActor(actor);
+          renderer.resetCamera();
+        });
+        // load full MINA atlas to show position of parcellation
+        reader.setUrl(`/bridgeport/data/MINA/C${c}/C${c}_all.vtk`).then(() => {
+          const polydata = reader.getOutputData();
+          const mapper = vtkMapper.newInstance();
+          const actor = vtkActor.newInstance();
+          actor.setMapper(mapper);
+          mapper.setInputData(polydata);
+          actor.getProperty().setColor(0.5, 0.5, 0.5);
+          actor.getProperty().setOpacity(0.2);
+          renderer.addActor(actor);
+          renderer.getActiveCamera().zoom(1);
+        });
+        setTimeout(render, 1000);
+      });
+
+      // load MUSE vtk
+      const vtkPanel = document.createElement('div');
+      vtkPanel.classList.add('col-span-12', 'relative');
+      vtkPanel.id = 'muse-vtk';
+      vtkPanel.style.bottom = 'calc(30vw - 100px)';
+      vtkContainerRef.current.appendChild(vtkPanel);
+      const genericRenderer = vtkGenericRenderWindow.newInstance();
+      const renderer = genericRenderer.getRenderer();
+      const renderWindow = genericRenderer.getRenderWindow();
+      const render = renderWindow.render;
+      renderer.setBackground(1, 1, 1);
+      genericRenderer.setContainer(vtkPanel);
+      const reader = vtkPolyDataReader.newInstance();
+      reader.setUrl(`/bridgeport/data/MUSE/MUSE_${roi.TISSUE_SEG}_${roi.ROI_INDEX}.vtk`).then(() => {
+        const polydata = reader.getOutputData();
+        const mapper = vtkMapper.newInstance();
+        const actor = vtkActor.newInstance();
+        actor.setMapper(mapper);
+        mapper.setInputData(polydata);
+        actor.getProperty().setColor(1, 0, 0);
+        renderer.addActor(actor);
+        renderer.resetCamera();
+        renderer.getActiveCamera().zoom(0.7);
+        setTimeout(render, 2000);
+      });
+      // overlay whole MINA atlas
+      reader.setUrl(`/bridgeport/data/MINA/C32/C32_all.vtk`).then(() => {
+        const polydata = reader.getOutputData();
+        const mapper = vtkMapper.newInstance();
+        const actor = vtkActor.newInstance();
+        actor.setMapper(mapper);
+        mapper.setInputData(polydata);
+        actor.getProperty().setColor(0.5, 0.5, 0.5);
+        actor.getProperty().setOpacity(0.2);
+        renderer.addActor(actor);
+        setTimeout(render, 2000);
+      });
+    }
+
     const matches = {
       'GWAS': [[]],
       'IWAS': [[]],
+      'MUSE': [[]],
       'geneticCorrelation': [[]],
       'geneAnalysis': [[]],
       'heritabilityEstimate': [[]],
     };
-    if (searchQuery.length === 0) {
-      setSearchResults(matches);
-    } else {
-      if (searchBy === 'IDP' || (searchQuery.toUpperCase().startsWith('C') && searchBy === '')) {
-        // need to search everything (gene analysis, heritability estimates, genetic correlation, GWAS and IWAS)
-        matches['GWAS'] = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
-          sorter: rankedItems => {
-            return rankedItems.sort((a, b) => {
-              return parseFloat(a.item.P) - parseFloat(b.item.P)
-            });
-          }
-        });
-        matches['IWAS'] = matchSorter(atlas > 0 ? IWASByAtlas[atlas] : IWAS, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
-          sorter: rankedItems => {
-            return rankedItems.sort((a, b) => {
-              return parseFloat(a.item.Pvalue) - parseFloat(b.item.Pvalue)
-            });
-          }
-        });
-        matches['geneAnalysis'] = matchSorter(atlas > 0 ? geneAnalysisByAtlas[atlas] : geneAnalysis, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
-          sorter: rankedItems => {
-            return rankedItems.sort((a, b) => {
-              return parseFloat(a.item.P) - parseFloat(b.item.P)
-            });
-          }
-        });
-        matches['geneticCorrelation'] = matchSorter(atlas > 0 ? geneticCorrelationByAtlas[atlas] : geneticCorrelation, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
-          sorter: rankedItems => {
-            return rankedItems.sort((a, b) => {
-              return parseFloat(a.item.P) - parseFloat(b.item.P)
-            });
-          }
-        });
-        matches['heritabilityEstimate'] = matchSorter(atlas > 0 ? heritabilityEstimateByAtlas[atlas] : heritabilityEstimate, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
-          sorter: rankedItems => {
-            return rankedItems.sort((a, b) => {
-              return parseFloat(a.item.Heritability) - parseFloat(b.item.Heritability)
-            });
-          }
-        });
-        let suggestions = []
-        if (searchQuery.indexOf('_') === -1) { // Cx
-          suggestions = ['C32_', 'C64_', 'C128_', 'C256_', 'C512_', 'C1024_']
-        } else if (searchQuery.endsWith('_')) { // Cx_
-          suggestions = [...Array(parseInt(searchQuery.toUpperCase().replace('C', '').replace('_', ''))).keys()].map(i => `${searchQuery.toUpperCase()}${i + 1}`);
-        } else { // Cx_y
-          const parts = searchQuery.toUpperCase().split('_');
-          suggestions = [...Array(parseInt(parts[0].replace('C', ''))).keys()].map(i => `${parts[0]}_${i + 1}`);
+    if (searchBy === 'MINA' || (q.toUpperCase().startsWith('C') && searchBy === '')) {
+      // need to search everything (gene analysis, heritability estimates, genetic correlation, GWAS and IWAS)
+      matches['GWAS'] = matchSorter(GWAS, q, {
+        keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
+        sorter: rankedItems => {
+          return rankedItems.sort((a, b) => {
+            return parseFloat(a.item.P) - parseFloat(b.item.P)
+          });
         }
-        setSearchSuggestions(suggestions);
-      } else if (searchBy === 'SNP' || (searchQuery.startsWith('rs') && searchBy === '')) {
-        // only need to search GWAS
-        matches['GWAS'] = matchSorter(atlas > 0 ? GWASByAtlas[atlas] : GWAS, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'ID' }],
-          sorter: rankedItems => {
-            return rankedItems.sort((a, b) => {
-              return parseFloat(a.item.P) - parseFloat(b.item.P)
-            })
+      });
+      matches['IWAS'] = matchSorter(IWAS, q, {
+        keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
+        sorter: rankedItems => {
+          return rankedItems.sort((a, b) => {
+            return parseFloat(a.item.Pvalue) - parseFloat(b.item.Pvalue)
+          });
+        }
+      });
+      matches['geneAnalysis'] = matchSorter(geneAnalysis, q, {
+        keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
+        sorter: rankedItems => {
+          return rankedItems.sort((a, b) => {
+            return parseFloat(a.item.P) - parseFloat(b.item.P)
+          });
+        }
+      });
+      matches['geneticCorrelation'] = matchSorter(geneticCorrelation, q, {
+        keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
+        sorter: rankedItems => {
+          return rankedItems.sort((a, b) => {
+            return parseFloat(a.item.P) - parseFloat(b.item.P)
+          });
+        }
+      });
+      matches['heritabilityEstimate'] = matchSorter(heritabilityEstimate, q, {
+        keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
+        sorter: rankedItems => {
+          return rankedItems.sort((a, b) => {
+            return parseFloat(a.item.Heritability) - parseFloat(b.item.Heritability)
+          });
+        }
+      });
+      if (q.indexOf('_') === -1) { // Cx
+        setSearchSuggestions(['C32_', 'C64_', 'C128_', 'C256_', 'C512_', 'C1024_']);
+        return;
+      } else if (q.endsWith('_')) { // Cx_
+        setSearchSuggestions([...Array(parseInt(q.toUpperCase().replace('C', '').replace('_', ''))).keys()].map(i => `${q.toUpperCase()}${i + 1}`));
+        return;
+      } else { // Cx_y
+        const parts = q.toUpperCase().split('_');
+        const scaleC = parseInt(parts[0].replace('C', ''))
+        setSearchSuggestions([...Array(scaleC).keys()].map(i => `${parts[0]}_${i + 1}`));
+        // animate in and highlight target
+        if (!suggestionsOnly) {
+          if (scaleC === atlas) {
+            greyOut(q);
+          } else {
+            setAtlas(scaleC);
+            vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomInLeft');
+            vtkContainerRef.current.classList.remove('col-span-12', 'sm:col-span-2', 'grid', 'grid-cols-12');
+            vtkContainerRef.current.addEventListener('animationend', () => {
+              vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomInLeft');
+            }, { once: true });
+            renderAtlas(scaleC, () => greyOut(q));
           }
-        });
-        setSearchSuggestions(matches['GWAS'].map(item => item.ID).filter((value, index, self) => self.indexOf(value) === index));
-      } else if (searchBy === 'IWAS' || (searchBy === '' && includesAndStartsWith(searchQuery, clinical_traits))) {
-        // only need to search IWAS
-        matches['IWAS'] = matchSorter(atlas > 0 ? IWASByAtlas[atlas] : IWAS, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'trait' }],
-          sorter: rankedItems => {
-            return rankedItems.sort((a, b) => {
-              return parseFloat(a.item.Pvalue) - parseFloat(b.item.Pvalue)
-            })
-          }
-        });
-        // IWAS suggestions should be fuzzy (results are exact match)
-        const iwasSuggestions = matchSorter(atlas > 0 ? IWASByAtlas[atlas] : IWAS, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'trait' }]
-        }).map(item => item.trait).filter((value, index, self) => self.indexOf(value) === index)
-        setSearchSuggestions(iwasSuggestions);
-      } else { // presumably a gene symbol
-        // only need to search gene analysis
-        matches['geneAnalysis'] = matchSorter(atlas > 0 ? geneAnalysisByAtlas[atlas] : geneAnalysis, searchQuery, {
-          keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'GENE' }],
-          sorter: rankedItems => {
-            return rankedItems.sort((a, b) => {
-              return parseFloat(a.item.P) - parseFloat(b.item.P)
-            })
-          }
-        });
-        setSearchSuggestions(matches['geneAnalysis'].map(item => item.GENE).filter((value, index, self) => self.indexOf(value) === index));
+        }
       }
-      if (matches['GWAS'].length === 0 && matches['IWAS'].length === 0 && matches['geneAnalysis'].length === 0 && matches['geneticCorrelation'].length === 0) {
-        matches['GWAS'] = atlas > 0 ? GWASByAtlas[atlas] : GWAS
+    } else if (searchBy === 'SNP' || (q.startsWith('rs') && searchBy === '')) {
+      // only need to search GWAS
+      matches['GWAS'] = matchSorter(GWAS, q, {
+        keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'ID' }],
+        sorter: rankedItems => {
+          return rankedItems.sort((a, b) => {
+            return parseFloat(a.item.P) - parseFloat(b.item.P)
+          })
+        }
+      });
+      setSearchSuggestions(matches['GWAS'].map(item => item.ID).filter((value, index, self) => self.indexOf(value) === index));
+    } else if (searchBy === 'IWAS' || (searchBy === '' && includesAndStartsWith(q, [...new Set(IWAS.map(d => d.trait))]))) {
+      // only need to search IWAS
+      matches['IWAS'] = matchSorter(IWAS, q, {
+        keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'trait' }],
+        sorter: rankedItems => {
+          return rankedItems.sort((a, b) => {
+            return parseFloat(a.item.Pvalue) - parseFloat(b.item.Pvalue)
+          })
+        }
+      });
+      // IWAS suggestions should be fuzzy (results are exact match)
+      const iwasSuggestions = matchSorter(IWAS, q, {
+        keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'trait' }]
+      }).map(item => item.trait).filter((value, index, self) => self.indexOf(value) === index)
+      setSearchSuggestions(iwasSuggestions);
+    } else if (searchBy === 'MUSE' || (searchBy === '' && includesAndStartsWith(q, [...new Set(MUSE.map(d => d.ROI_NAME))]))) {
+      // only need to search MUSE
+      matches['MUSE'] = matchSorter(MUSE, q, {
+        keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'ROI_NAME' }]
+      });
+      const museSuggestions = matchSorter(MUSE, q, {
+        keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'ROI_NAME' }]
+      }).map(item => item.ROI_NAME).filter((value, index, self) => self.indexOf(value) === index)
+      setSearchSuggestions(museSuggestions);
+      if (!suggestionsOnly && matches['MUSE'].length === 1) {
+        renderMUSE(matches['MUSE'][0]);
       }
+    } else { // presumably a gene symbol
+      // only need to search gene analysis
+      matches['geneAnalysis'] = matchSorter(geneAnalysis, q, {
+        keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'GENE' }],
+        sorter: rankedItems => {
+          return rankedItems.sort((a, b) => {
+            return parseFloat(a.item.P) - parseFloat(b.item.P)
+          })
+        }
+      });
+      setSearchSuggestions(matches['geneAnalysis'].map(item => item.GENE).filter((value, index, self) => self.indexOf(value) === index));
+    }
+    if (!suggestionsOnly) {
       setSearchResults(paginateResults(matches, 10));
     }
-    setPagination({
-      GWAS: 0,
-      IWAS: 0,
-      geneticCorrelation: 0,
-      geneAnalysis: 0,
-      heritabilityEstimate: 0,
-    })
-  }, [searchQuery, searchBy, atlas]);
-
-  useEffect(() => {
-    if (params.atlas !== undefined) {
-      animateIn(params.atlas);
-      setPhenotype('');
+    if (!suggestionsOnly) {
+      setPagination({
+        GWAS: 0,
+        IWAS: 0,
+        MUSE: 0,
+        geneticCorrelation: 0,
+        geneAnalysis: 0,
+        heritabilityEstimate: 0,
+      });
       setSearched(true);
-    } else if (params.IDP !== undefined) {
-      setSearchBy('IDP')
-      submitSearch(params.IDP)
-    } else if (params.query !== undefined) {
-      setSearchBy('');
-      submitSearch(params.query)
-    } else if (params.SNP !== undefined) {
-      setSearchBy('SNP')
-      submitSearch(params.SNP)
-    } else if (params.IWAS !== undefined) {
-      setSearchBy('IWAS')
-      submitSearch(params.IWAS)
-    } else if (params.geneAnalysis !== undefined) {
-      setSearchBy('geneAnalysis')
-      submitSearch(params.geneAnalysis)
-    } else { // presumably / 
+    }
+    // else {
+    //   setSearched(false);
+    // }
+  } // end of submitSearch
+
+  // search when search query changes
+  useEffect(submitSearch, [searchQuery]);
+
+  // load data
+  useEffect(() => {
+    axios.get("data/json/GWAS.json").then(res => setGWAS(res.data));
+    axios.get("data/json/IWAS.json").then(res => setIWAS(res.data));
+    axios.get("data/json/MUSE.json").then(res => setMUSE(res.data));
+    axios.get("data/json/heritability_estimate.json").then(res => setHeritabilityEstimate(res.data));
+    axios.get("data/json/gene_analysis.json").then(res => setGeneAnalysis(res.data));
+    axios.get("data/json/genetic_correlation.json").then(res => setGeneticCorrelation(res.data));
+  }, []);
+
+  // navigate to homepage when navigate("/") is called
+  useEffect(() => {
+    if (Object.keys(params).length === 0) {
       animateOut();
       setSearched(false);
+      setSearchBy('');
+      searchBoxRef.current.value = '';
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
 
@@ -529,7 +571,7 @@ function App() {
             <div className={atlas > 0 && phenotype.length === 0 ? "-z-30 animate__animated animate__bounceInDown" : "max-w-lg -z-30 animate__animated animate__bounceInLeft"} ref={vtkContainerRef} />
           </div>
         </div>
-        <p className={atlas > 0 && phenotype.length === 0 ?  "-mb-4 -mt-8 z-50 text-right col-span-12 text-gray-500" : "hidden"}>Right click a parcellation to reveal statistics</p>
+        <p className={atlas > 0 && phenotype.length === 0 ? "-mb-4 -mt-8 z-50 text-right col-span-12 text-gray-500" : "hidden"}>Right click a parcellation to reveal statistics</p>
         {Object.keys(vtkPreviews).map((c => {
           return (
             <div className={atlas > 0 ? "hidden" : "col-span-12 sm:col-span-2"} ref={vtkPreviews[c]} key={c}>
@@ -546,9 +588,9 @@ function App() {
           for (let i = 0; i < actors.length; i++) {
             const disabled = actors[i];
             disabled.getProperty().setOpacity(1);
-            const h1 = parseInt(md5(`C${atlas}_${i}_r`), 16) / max_hash;
-            const h2 = parseInt(md5(`C${atlas}_${i}_g`), 16) / max_hash;
-            const h3 = parseInt(md5(`C${atlas}_${i}_b`), 16) / max_hash;
+            const h1 = parseInt(md5(`C${atlas}_${i}_r`), 16) / 0xffffffffffffffffffffffffffffffff;
+            const h2 = parseInt(md5(`C${atlas}_${i}_g`), 16) / 0xffffffffffffffffffffffffffffffff;
+            const h3 = parseInt(md5(`C${atlas}_${i}_b`), 16) / 0xffffffffffffffffffffffffffffffff;
             disabled.getProperty().setColor(h1, h2, h3);
           }
           setPhenotype('');
@@ -563,6 +605,7 @@ function App() {
           }
           setTypingTimer(null);
           const searchBox = e.target.querySelector('input');
+          setSearchQuery(searchBox.value);
           navigate(`/${searchBy === '' ? 'search' : searchBy}/${searchBox.value}`);
         }}>
           <div className="form-control my-2">
@@ -570,13 +613,17 @@ function App() {
               <button type="button" className={(searched ? "" : "hidden") + " sm:absolute sm:w-28 w-full top-0 left-0 sm:rounded-r-none sm:mb-0 mb-2 btn btn-primary"} onClick={(e) => {
                 e.preventDefault();
                 navigate('/');
+                animateOut();
+                setSearched(false);
+                setSearchBy('');
               }}>&larr; Back</button>
               <select className={"select select-bordered select-primary sm:rounded-r-none sm:absolute sm:w-auto w-full mb-2 sm:mb-0 top-0 " + (searched ? "left-24" : "left-0")} onChange={x => setSearchBy(x.target.value)}>
                 <option selected={searchBy === '' || searchBy === 'search'} value="">Search by</option>
-                <option selected={searchBy === 'IDP'} value="IDP">IDP</option>
+                <option selected={searchBy === 'MINA'} value="MINA">MINA</option>
                 <option selected={searchBy === 'SNP'} value="SNP">SNP</option>
                 <option selected={searchBy === 'geneAnalysis'} value="geneAnalysis">Gene symbol</option>
                 <option selected={searchBy === 'IWAS'} value="IWAS">Clinical traits</option>
+                <option selected={searchBy === 'MUSE'} value="MUSE">MUSE</option>
               </select>
 
               <input type="text" placeholder={fancyPlaceholder(searchBy)} className={(searched ? "sm:pl-64" : "sm:pl-40") + " input input-bordered input-primary w-full mb-2 sm:mb-0"} ref={searchBoxRef} onChange={x => {
@@ -585,7 +632,7 @@ function App() {
                   clearTimeout(typingTimer);
                 }
                 const timeout = setTimeout(() => {
-                  setSearchQuery(x.target.value);
+                  submitSearch(x.target.value, true);
                   setTypingTimer(null);
                   setSearched(false);
                 }, 900);
@@ -596,7 +643,7 @@ function App() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
               </button>
-              <ul tabIndex="0" className={searchSuggestions.length > 0 && searchQuery.length > 0 && !searched ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
+              <ul tabIndex="0" className={searchSuggestions.length > 0 && !searched ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
                 {searchSuggestions.map((x, i) => {
                   return (
                     <li key={i} className="hover:bg-primary-100 z-50">
@@ -604,6 +651,7 @@ function App() {
                         e.preventDefault();
                         searchBoxRef.current.value = x;
                         navigate(`/${searchBy === '' ? 'search' : searchBy}/${x}`);
+                        setSearchQuery(x);
                       }
                       } className="btn-ghost text-left inline w-fit normal-case font-medium">{x}</button>
                     </li>
@@ -615,10 +663,10 @@ function App() {
           </div>
         </form>
 
-        <div class={searched ? "hidden" : "alert col-span-12 mb-8 shadow"}>
-          <div class="flex-1">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#2196f3" class="w-6 h-6 mx-2">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        <div className={searched ? "hidden" : "alert col-span-12 mb-8 shadow"}>
+          <div className="flex-1">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#2196f3" className="w-6 h-6 mx-2">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <label>
               <h4>Bridgeport allows us to browse the results of PSC-wide association studies and genome-wide association studies. It currently supports the following searching criteria:</h4>
@@ -635,7 +683,7 @@ function App() {
 
         {Object.keys(pagination).map(table => (
           // since col-span-6 and col-span-12 classes are set via concatenation, purgeCSS won't see it so those classes have to be set in safelist
-          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0) + (searchResults['MUSE'][0] !== undefined && searchResults['MUSE'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
             <h4 className="font-bold text-xl inline">{table === 'geneAnalysis' ? 'Gene analysis' : table === 'heritabilityEstimate' ? 'Heritability estimate' : table === 'geneticCorrelation' ? 'Genetic correlation' : table}</h4>
             <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>
             <div className="inline btn-group float-right">
@@ -645,6 +693,7 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS - 1,
                       IWAS: pagination.IWAS,
+                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -654,6 +703,17 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS - 1,
+                      MUSE: pagination.MUSE,
+                      geneticCorrelation: pagination.geneticCorrelation,
+                      geneAnalysis: pagination.geneAnalysis,
+                      heritabilityEstimate: pagination.heritabilityEstimate,
+                    });
+                    break;
+                  case 'MUSE':
+                    setPagination({
+                      GWAS: pagination.GWAS,
+                      IWAS: pagination.IWAS,
+                      MUSE: pagination.MUSE - 1,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -663,6 +723,7 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS,
+                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation - 1,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -672,6 +733,7 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS,
+                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis - 1,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -681,6 +743,7 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS,
+                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate - 1,
@@ -699,6 +762,7 @@ function App() {
                         // offset + current_page then subtract min(current_page, 2) to show prev pages
                         GWAS: x + pagination.GWAS - Math.min(pagination.GWAS, 2),
                         IWAS: pagination.IWAS,
+                        MUSE: pagination.MUSE,
                         geneticCorrelation: pagination.geneticCorrelation,
                         geneAnalysis: pagination.geneAnalysis,
                         heritabilityEstimate: pagination.heritabilityEstimate,
@@ -708,6 +772,17 @@ function App() {
                       setPagination({
                         GWAS: pagination.GWAS,
                         IWAS: x + pagination.IWAS - Math.min(pagination.IWAS, 2),
+                        MUSE: pagination.MUSE,
+                        geneticCorrelation: pagination.geneticCorrelation,
+                        geneAnalysis: pagination.geneAnalysis,
+                        heritabilityEstimate: pagination.heritabilityEstimate,
+                      });
+                      break;
+                    case 'MUSE':
+                      setPagination({
+                        GWAS: pagination.GWAS,
+                        IWAS: pagination.IWAS,
+                        MUSE: x + pagination.MUSE - Math.min(pagination.MUSE, 2),
                         geneticCorrelation: pagination.geneticCorrelation,
                         geneAnalysis: pagination.geneAnalysis,
                         heritabilityEstimate: pagination.heritabilityEstimate,
@@ -717,6 +792,7 @@ function App() {
                       setPagination({
                         GWAS: pagination.GWAS,
                         IWAS: pagination.IWAS,
+                        MUSE: pagination.MUSE,
                         geneticCorrelation: x + pagination.geneticCorrelation - Math.min(pagination.geneticCorrelation, 2),
                         geneAnalysis: pagination.geneAnalysis,
                         heritabilityEstimate: pagination.heritabilityEstimate,
@@ -726,6 +802,7 @@ function App() {
                       setPagination({
                         GWAS: pagination.GWAS,
                         IWAS: pagination.IWAS,
+                        MUSE: pagination.MUSE,
                         geneticCorrelation: pagination.geneticCorrelation,
                         geneAnalysis: x + pagination.geneAnalysis - Math.min(pagination.geneAnalysis, 2),
                         heritabilityEstimate: pagination.heritabilityEstimate,
@@ -735,6 +812,7 @@ function App() {
                       setPagination({
                         GWAS: pagination.GWAS,
                         IWAS: pagination.IWAS,
+                        MUSE: pagination.MUSE,
                         geneticCorrelation: pagination.geneticCorrelation,
                         geneAnalysis: pagination.geneAnalysis,
                         heritabilityEstimate: x + pagination.heritabilityEstimate - Math.min(pagination.heritabilityEstimate, 2),
@@ -752,6 +830,7 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS + 1,
                       IWAS: pagination.IWAS,
+                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -761,6 +840,17 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS + 1,
+                      MUSE: pagination.MUSE,
+                      geneticCorrelation: pagination.geneticCorrelation,
+                      geneAnalysis: pagination.geneAnalysis,
+                      heritabilityEstimate: pagination.heritabilityEstimate,
+                    });
+                    break;
+                  case 'MUSE':
+                    setPagination({
+                      GWAS: pagination.GWAS,
+                      IWAS: pagination.IWAS,
+                      MUSE: pagination.MUSE + 1,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -770,6 +860,7 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS,
+                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation + 1,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -779,6 +870,7 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS,
+                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis + 1,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -788,6 +880,7 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS,
+                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate + 1,
@@ -803,41 +896,48 @@ function App() {
               <thead>
                 {table === 'GWAS' ? <tr><th></th><th>ID</th><th>P-value</th><th>Beta</th></tr> :
                   table === 'IWAS' ? <tr><th></th><th>Trait</th><th>P-value</th><th>ES</th></tr> :
-                    table === 'geneticCorrelation' ? <tr><th></th><th>Trait</th><th>Mean</th><th>Std. Dev.</th><th>P-value</th></tr> :
-                      table === 'geneAnalysis' ? <tr><th></th><th>Gene</th><th>Chromosome</th><th>Start - Stop</th><th>NSNPS</th><th>NPARAM</th><th>N</th><th>Z Stat</th><th>P-value</th></tr> :
-                        table === 'heritabilityEstimate' ? <tr><th></th><th>Heritability</th><th>P-value</th></tr> :
-                          <div>Error: unknown table {table}</div>}
+                    table === 'MUSE' ? <tr><th>ROI</th><th>Tissue</th></tr> :
+                      table === 'geneticCorrelation' ? <tr><th></th><th>Trait</th><th>Mean</th><th>Std. Dev.</th><th>P-value</th></tr> :
+                        table === 'geneAnalysis' ? <tr><th></th><th>Gene</th><th>Chromosome</th><th>Start - Stop</th><th>NSNPS</th><th>NPARAM</th><th>N</th><th>Z Stat</th><th>P-value</th></tr> :
+                          table === 'heritabilityEstimate' ? <tr><th></th><th>Heritability</th><th>P-value</th></tr> :
+                            <div>Error: unknown table {table}</div>}
               </thead>
               <tbody>
                 {searchResults[table][pagination[table]] === undefined ? <tr></tr> : searchResults[table][pagination[table]].map((x, i) => {
                   switch (table) {
                     case 'GWAS':
                       return (
-                        <tr key={i} className="hover cursor-pointer">
+                        <tr key={i} className="hover">
                           <td>{x.IDP}</td><td>{x.ID}</td><td>{x.P}</td><td>{x.BETA}</td>
                         </tr>
                       );
                     case 'IWAS':
                       return (
-                        <tr key={i} className="hover cursor-pointer">
+                        <tr key={i} className="hover">
                           <td>{x.IDP}</td><td>{x.trait}</td><td>{x.Pvalue}</td><td>{x.ES}</td>
+                        </tr>
+                      );
+                    case 'MUSE':
+                      return (
+                        <tr key={i} className="hover">
+                          <td>{x.ROI_NAME}</td><td>{x.TISSUE_SEG}</td>
                         </tr>
                       );
                     case 'geneticCorrelation':
                       return (
-                        <tr key={i} className="hover cursor-pointer">
+                        <tr key={i} className="hover">
                           <td>{x.IDP}</td><td>{x.trait}</td><td>{x.gc_mean}</td><td>{x.gc_std}</td><td>{x.P}</td>
                         </tr>
                       );
                     case 'geneAnalysis':
                       return (
-                        <tr key={i} className="hover cursor-pointer">
+                        <tr key={i} className="hover">
                           <td>{x.IDP}</td><td>{x.GENE}</td><td>{x.CHR}</td><td>{x.START} - {x.STOP}</td><td>{x.NSNPS}</td><td>{x.NPARAM}</td><td>{x.N}</td><td>{x.ZSTAT}</td><td>{x.P}</td>
                         </tr>
                       );
                     case 'heritabilityEstimate':
                       return (
-                        <tr key={i} className="hover cursor-pointer">
+                        <tr key={i} className="hover">
                           <td>{x.IDP}</td><td>{x.Heritability}</td><td>{x.Pvalue}</td>
                         </tr>
                       );
