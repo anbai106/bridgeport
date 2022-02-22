@@ -40,7 +40,7 @@ def is_float(element):
         return False
 
 os.chdir("/Users/tim/repos/bridgeport/data")
-df = read_csv("sourcedata/Significnat_after_correction_thres_5e-8.tsv")
+df = read_csv("sourcedata/GWAS_SNP_significnat_after_correction_thres_5e-8.tsv")
 write_json("json/GWAS.json", df)
 
 df = read_csv("sourcedata/Gene_analysis/bridgeport_significant_gene.tsv")
@@ -54,3 +54,6 @@ write_json("json/heritability_estimate.json", df)
 
 df = read_csv("sourcedata/IWAS/bridgeport_iwas.tsv")
 write_json("json/IWAS.json", df)
+
+df = read_csv("sourcedata/MUSE/MUSE_2_MINA_overlap_index.tsv")
+write_json("json/MUSE.json", df)
