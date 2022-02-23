@@ -66,7 +66,6 @@ function App() {
     // double arrays for pagination
     'GWAS': [[]],
     'IWAS': [[]],
-    'MUSE': [[]],
     'geneticCorrelation': [[]],
     'geneAnalysis': [[]],
     'heritabilityEstimate': [[]],
@@ -78,7 +77,6 @@ function App() {
   const [pagination, setPagination] = useState({ // pagination for the data table
     GWAS: 0,
     IWAS: 0,
-    MUSE: 0,
     geneticCorrelation: 0,
     geneAnalysis: 0,
     heritabilityEstimate: 0,
@@ -137,10 +135,9 @@ function App() {
     if (q === null) {
       q = searchQuery
     }
-    if (q.length === 0 || searched) {
+    if ((q.length === 0 || searched) && !suggestionsOnly) {
       return;
     }
-    console.log('searching for', q)
 
     const includesAndStartsWith = (str, arr) => {
       for (let i = 0; i < arr.length; i++) {
@@ -323,6 +320,7 @@ function App() {
           actor.getProperty().setColor(1, 0, 0);
           renderer.addActor(actor);
           renderer.resetCamera();
+          render()
         });
         // load full MINA atlas to show position of parcellation
         reader.setUrl(`/bridgeport/data/MINA/C${c}/C${c}_all.vtk`).then(() => {
@@ -335,14 +333,13 @@ function App() {
           actor.getProperty().setOpacity(0.2);
           renderer.addActor(actor);
           renderer.getActiveCamera().zoom(1);
+          render()
         });
-        setTimeout(render, 1000);
       });
 
       // load MUSE vtk
       const vtkPanel = document.createElement('div');
       vtkPanel.classList.add('col-span-12', 'relative');
-      vtkPanel.id = 'muse-vtk';
       vtkPanel.style.bottom = 'calc(30vw - 100px)';
       vtkContainerRef.current.appendChild(vtkPanel);
       const genericRenderer = vtkGenericRenderWindow.newInstance();
@@ -362,7 +359,7 @@ function App() {
         renderer.addActor(actor);
         renderer.resetCamera();
         renderer.getActiveCamera().zoom(0.7);
-        setTimeout(render, 2000);
+        render()
       });
       // overlay whole MINA atlas
       reader.setUrl(`/bridgeport/data/MINA/C32/C32_all.vtk`).then(() => {
@@ -374,14 +371,13 @@ function App() {
         actor.getProperty().setColor(0.5, 0.5, 0.5);
         actor.getProperty().setOpacity(0.2);
         renderer.addActor(actor);
-        setTimeout(render, 2000);
+        render()
       });
     }
 
     const matches = {
       'GWAS': [[]],
       'IWAS': [[]],
-      'MUSE': [[]],
       'geneticCorrelation': [[]],
       'geneAnalysis': [[]],
       'heritabilityEstimate': [[]],
@@ -430,6 +426,10 @@ function App() {
       });
       if (q.indexOf('_') === -1) { // Cx
         setSearchSuggestions(['C32_', 'C64_', 'C128_', 'C256_', 'C512_', 'C1024_']);
+        if (!suggestionsOnly) {
+          setAtlas(q.substring(1))
+          renderAtlas(q.substring(1))
+        }
         return;
       } else if (q.endsWith('_')) { // Cx_
         setSearchSuggestions([...Array(parseInt(q.toUpperCase().replace('C', '').replace('_', ''))).keys()].map(i => `${q.toUpperCase()}${i + 1}`));
@@ -455,7 +455,8 @@ function App() {
       }
     } else if (searchBy === 'SNP' || (q.startsWith('rs') && searchBy === '')) {
       // only need to search GWAS
-      matches['GWAS'] = matchSorter(GWAS, q, {
+      // slice GWAS if search query short to avoid slow search
+      matches['GWAS'] = matchSorter(q.length > 4 ? GWAS : GWAS.slice(0, 100), q, {
         keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'ID' }],
         sorter: rankedItems => {
           return rankedItems.sort((a, b) => {
@@ -481,15 +482,15 @@ function App() {
       setSearchSuggestions(iwasSuggestions);
     } else if (searchBy === 'MUSE' || (searchBy === '' && includesAndStartsWith(q, [...new Set(MUSE.map(d => d.ROI_NAME))]))) {
       // only need to search MUSE
-      matches['MUSE'] = matchSorter(MUSE, q, {
+      const MUSEmatches = matchSorter(MUSE, q, {
         keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'ROI_NAME' }]
       });
       const museSuggestions = matchSorter(MUSE, q, {
         keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'ROI_NAME' }]
       }).map(item => item.ROI_NAME).filter((value, index, self) => self.indexOf(value) === index)
       setSearchSuggestions(museSuggestions);
-      if (!suggestionsOnly && matches['MUSE'].length === 1) {
-        renderMUSE(matches['MUSE'][0]);
+      if (!suggestionsOnly && MUSEmatches.length === 1) {
+        renderMUSE(MUSEmatches[0]);
       }
     } else { // presumably a gene symbol
       // only need to search gene analysis
@@ -510,7 +511,6 @@ function App() {
       setPagination({
         GWAS: 0,
         IWAS: 0,
-        MUSE: 0,
         geneticCorrelation: 0,
         geneAnalysis: 0,
         heritabilityEstimate: 0,
@@ -523,7 +523,9 @@ function App() {
   } // end of submitSearch
 
   // search when search query changes
-  useEffect(submitSearch, [searchQuery]);
+  useEffect(submitSearch, [searchQuery, GWAS, IWAS, MUSE, geneAnalysis, heritabilityEstimate, geneticCorrelation]);
+  // only set suggestions when searchBy changes
+  useEffect(() => submitSearch(null, true), [searchBy]);
 
   // load data
   useEffect(() => {
@@ -535,13 +537,16 @@ function App() {
     axios.get("data/json/genetic_correlation.json").then(res => setGeneticCorrelation(res.data));
   }, []);
 
-  // navigate to homepage when navigate("/") is called
   useEffect(() => {
+    // navigate to homepage when navigate("/") is called
     if (Object.keys(params).length === 0) {
       animateOut();
       setSearched(false);
       setSearchBy('');
       searchBoxRef.current.value = '';
+    } else if (params.atlas !== undefined) {
+      setSearchBy('MINA')
+      setSearchQuery('C' + params.atlas);
     }
   }, [params]);
 
@@ -683,7 +688,7 @@ function App() {
 
         {Object.keys(pagination).map(table => (
           // since col-span-6 and col-span-12 classes are set via concatenation, purgeCSS won't see it so those classes have to be set in safelist
-          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0) + (searchResults['MUSE'][0] !== undefined && searchResults['MUSE'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
             <h4 className="font-bold text-xl inline">{table === 'geneAnalysis' ? 'Gene analysis' : table === 'heritabilityEstimate' ? 'Heritability estimate' : table === 'geneticCorrelation' ? 'Genetic correlation' : table}</h4>
             <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>
             <div className="inline btn-group float-right">
@@ -693,7 +698,6 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS - 1,
                       IWAS: pagination.IWAS,
-                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -703,17 +707,7 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS - 1,
-                      MUSE: pagination.MUSE,
-                      geneticCorrelation: pagination.geneticCorrelation,
-                      geneAnalysis: pagination.geneAnalysis,
-                      heritabilityEstimate: pagination.heritabilityEstimate,
-                    });
-                    break;
-                  case 'MUSE':
-                    setPagination({
-                      GWAS: pagination.GWAS,
-                      IWAS: pagination.IWAS,
-                      MUSE: pagination.MUSE - 1,
+
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -723,7 +717,6 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS,
-                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation - 1,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -733,7 +726,6 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS,
-                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis - 1,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -743,7 +735,6 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS,
-                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate - 1,
@@ -762,7 +753,6 @@ function App() {
                         // offset + current_page then subtract min(current_page, 2) to show prev pages
                         GWAS: x + pagination.GWAS - Math.min(pagination.GWAS, 2),
                         IWAS: pagination.IWAS,
-                        MUSE: pagination.MUSE,
                         geneticCorrelation: pagination.geneticCorrelation,
                         geneAnalysis: pagination.geneAnalysis,
                         heritabilityEstimate: pagination.heritabilityEstimate,
@@ -772,17 +762,6 @@ function App() {
                       setPagination({
                         GWAS: pagination.GWAS,
                         IWAS: x + pagination.IWAS - Math.min(pagination.IWAS, 2),
-                        MUSE: pagination.MUSE,
-                        geneticCorrelation: pagination.geneticCorrelation,
-                        geneAnalysis: pagination.geneAnalysis,
-                        heritabilityEstimate: pagination.heritabilityEstimate,
-                      });
-                      break;
-                    case 'MUSE':
-                      setPagination({
-                        GWAS: pagination.GWAS,
-                        IWAS: pagination.IWAS,
-                        MUSE: x + pagination.MUSE - Math.min(pagination.MUSE, 2),
                         geneticCorrelation: pagination.geneticCorrelation,
                         geneAnalysis: pagination.geneAnalysis,
                         heritabilityEstimate: pagination.heritabilityEstimate,
@@ -792,7 +771,6 @@ function App() {
                       setPagination({
                         GWAS: pagination.GWAS,
                         IWAS: pagination.IWAS,
-                        MUSE: pagination.MUSE,
                         geneticCorrelation: x + pagination.geneticCorrelation - Math.min(pagination.geneticCorrelation, 2),
                         geneAnalysis: pagination.geneAnalysis,
                         heritabilityEstimate: pagination.heritabilityEstimate,
@@ -802,7 +780,6 @@ function App() {
                       setPagination({
                         GWAS: pagination.GWAS,
                         IWAS: pagination.IWAS,
-                        MUSE: pagination.MUSE,
                         geneticCorrelation: pagination.geneticCorrelation,
                         geneAnalysis: x + pagination.geneAnalysis - Math.min(pagination.geneAnalysis, 2),
                         heritabilityEstimate: pagination.heritabilityEstimate,
@@ -812,7 +789,6 @@ function App() {
                       setPagination({
                         GWAS: pagination.GWAS,
                         IWAS: pagination.IWAS,
-                        MUSE: pagination.MUSE,
                         geneticCorrelation: pagination.geneticCorrelation,
                         geneAnalysis: pagination.geneAnalysis,
                         heritabilityEstimate: x + pagination.heritabilityEstimate - Math.min(pagination.heritabilityEstimate, 2),
@@ -830,7 +806,6 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS + 1,
                       IWAS: pagination.IWAS,
-                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -840,17 +815,6 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS + 1,
-                      MUSE: pagination.MUSE,
-                      geneticCorrelation: pagination.geneticCorrelation,
-                      geneAnalysis: pagination.geneAnalysis,
-                      heritabilityEstimate: pagination.heritabilityEstimate,
-                    });
-                    break;
-                  case 'MUSE':
-                    setPagination({
-                      GWAS: pagination.GWAS,
-                      IWAS: pagination.IWAS,
-                      MUSE: pagination.MUSE + 1,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -860,7 +824,6 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS,
-                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation + 1,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -870,7 +833,6 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS,
-                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis + 1,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -880,7 +842,6 @@ function App() {
                     setPagination({
                       GWAS: pagination.GWAS,
                       IWAS: pagination.IWAS,
-                      MUSE: pagination.MUSE,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate + 1,
@@ -896,11 +857,10 @@ function App() {
               <thead>
                 {table === 'GWAS' ? <tr><th></th><th>ID</th><th>P-value</th><th>Beta</th></tr> :
                   table === 'IWAS' ? <tr><th></th><th>Trait</th><th>P-value</th><th>ES</th></tr> :
-                    table === 'MUSE' ? <tr><th>ROI</th><th>Tissue</th></tr> :
-                      table === 'geneticCorrelation' ? <tr><th></th><th>Trait</th><th>Mean</th><th>Std. Dev.</th><th>P-value</th></tr> :
-                        table === 'geneAnalysis' ? <tr><th></th><th>Gene</th><th>Chromosome</th><th>Start - Stop</th><th>NSNPS</th><th>NPARAM</th><th>N</th><th>Z Stat</th><th>P-value</th></tr> :
-                          table === 'heritabilityEstimate' ? <tr><th></th><th>Heritability</th><th>P-value</th></tr> :
-                            <div>Error: unknown table {table}</div>}
+                    table === 'geneticCorrelation' ? <tr><th></th><th>Trait</th><th>Mean</th><th>Std. Dev.</th><th>P-value</th></tr> :
+                      table === 'geneAnalysis' ? <tr><th></th><th>Gene</th><th>Chromosome</th><th>Start - Stop</th><th>NSNPS</th><th>NPARAM</th><th>N</th><th>Z Stat</th><th>P-value</th></tr> :
+                        table === 'heritabilityEstimate' ? <tr><th></th><th>Heritability</th><th>P-value</th></tr> :
+                          <div>Error: unknown table {table}</div>}
               </thead>
               <tbody>
                 {searchResults[table][pagination[table]] === undefined ? <tr></tr> : searchResults[table][pagination[table]].map((x, i) => {
@@ -915,12 +875,6 @@ function App() {
                       return (
                         <tr key={i} className="hover">
                           <td>{x.IDP}</td><td>{x.trait}</td><td>{x.Pvalue}</td><td>{x.ES}</td>
-                        </tr>
-                      );
-                    case 'MUSE':
-                      return (
-                        <tr key={i} className="hover">
-                          <td>{x.ROI_NAME}</td><td>{x.TISSUE_SEG}</td>
                         </tr>
                       );
                     case 'geneticCorrelation':
