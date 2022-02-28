@@ -135,7 +135,7 @@ function App() {
     if (q === null) {
       q = searchQuery
     }
-    if ((q.length === 0 || searched) && !suggestionsOnly) {
+    if (q.length === 0 && !suggestionsOnly) {
       return;
     }
 
@@ -296,9 +296,16 @@ function App() {
 
       // create 6 renderers for each of the MINA atlases
       [32, 64, 128, 256, 512, 1024].forEach(c => {
+        // load MINA parcellation associated with MUSE ROI
+        const k = `MINA_C${c}_mapped`;
+        const fullC = `C${c}_${roi[k]}`;
         const vtkPanel = document.createElement('div');
-        vtkPanel.classList.add('col-span-12', 'sm:col-span-2');
+        vtkPanel.classList.add('col-span-12', 'sm:col-span-2', 'relative');
         vtkPanel.style.zIndex = 100;
+        const vtkPanelLabel = document.createElement('p');
+        vtkPanelLabel.classList.add('text-center', 'text-lg', 'font-semibold', 'absolute', 'left-0', 'right-0');
+        vtkPanelLabel.innerText = fullC;
+        vtkPanel.appendChild(vtkPanelLabel);
         vtkContainerRef.current.appendChild(vtkPanel);
         const genericRenderer = vtkGenericRenderWindow.newInstance();
         const renderer = genericRenderer.getRenderer();
@@ -308,20 +315,6 @@ function App() {
         genericRenderer.setContainer(vtkPanel);
 
         const reader = vtkPolyDataReader.newInstance();
-        // load MINA parcellation associated with MUSE ROI
-        const k = `MINA_C${c}_mapped`;
-        const fullC = `C${c}_${roi[k]}`;
-        reader.setUrl(`/bridgeport/data/MINA/C${c}/${fullC}.vtk`).then(() => {
-          const polydata = reader.getOutputData();
-          const mapper = vtkMapper.newInstance();
-          const actor = vtkActor.newInstance();
-          actor.setMapper(mapper);
-          mapper.setInputData(polydata);
-          actor.getProperty().setColor(1, 0, 0);
-          renderer.addActor(actor);
-          renderer.resetCamera();
-          render()
-        });
         // load full MINA atlas to show position of parcellation
         reader.setUrl(`/bridgeport/data/MINA/C${c}/C${c}_all.vtk`).then(() => {
           const polydata = reader.getOutputData();
@@ -332,8 +325,20 @@ function App() {
           actor.getProperty().setColor(0.5, 0.5, 0.5);
           actor.getProperty().setOpacity(0.2);
           renderer.addActor(actor);
-          renderer.getActiveCamera().zoom(1);
-          render()
+          renderer.getActiveCamera().zoom(0.5);
+          // render()
+          reader.setUrl(`/bridgeport/data/MINA/C${c}/${fullC}.vtk`).then(() => {
+            const polydata = reader.getOutputData();
+            const mapper = vtkMapper.newInstance();
+            const actor = vtkActor.newInstance();
+            actor.setMapper(mapper);
+            mapper.setInputData(polydata);
+            actor.getProperty().setColor(1, 0, 0);
+            renderer.addActor(actor);
+            renderer.resetCamera();
+            genericRenderer.resize();
+            render()
+          });
         });
       });
 
@@ -341,6 +346,10 @@ function App() {
       const vtkPanel = document.createElement('div');
       vtkPanel.classList.add('col-span-12', 'relative');
       vtkPanel.style.bottom = 'calc(30vw - 100px)';
+      const vtkPanelLabel = document.createElement('p');
+      vtkPanelLabel.classList.add('text-center', 'text-2xl', 'font-bold', 'absolute', 'left-0', 'right-0', 'bottom-0', 'z-50');
+      vtkPanelLabel.innerText = roi.ROI_NAME;
+      vtkContainerRef.current.appendChild(vtkPanelLabel);
       vtkContainerRef.current.appendChild(vtkPanel);
       const genericRenderer = vtkGenericRenderWindow.newInstance();
       const renderer = genericRenderer.getRenderer();
@@ -349,19 +358,7 @@ function App() {
       renderer.setBackground(1, 1, 1);
       genericRenderer.setContainer(vtkPanel);
       const reader = vtkPolyDataReader.newInstance();
-      reader.setUrl(`/bridgeport/data/MUSE/MUSE_${roi.TISSUE_SEG}_${roi.ROI_INDEX}.vtk`).then(() => {
-        const polydata = reader.getOutputData();
-        const mapper = vtkMapper.newInstance();
-        const actor = vtkActor.newInstance();
-        actor.setMapper(mapper);
-        mapper.setInputData(polydata);
-        actor.getProperty().setColor(1, 0, 0);
-        renderer.addActor(actor);
-        renderer.resetCamera();
-        renderer.getActiveCamera().zoom(0.7);
-        render()
-      });
-      // overlay whole MINA atlas
+      // overlay whole MINA atlas on MUSE vtk
       reader.setUrl(`/bridgeport/data/MINA/C32/C32_all.vtk`).then(() => {
         const polydata = reader.getOutputData();
         const mapper = vtkMapper.newInstance();
@@ -371,7 +368,20 @@ function App() {
         actor.getProperty().setColor(0.5, 0.5, 0.5);
         actor.getProperty().setOpacity(0.2);
         renderer.addActor(actor);
-        render()
+        // render()
+        reader.setUrl(`/bridgeport/data/MUSE/MUSE_${roi.TISSUE_SEG}_${roi.ROI_INDEX}.vtk`).then(() => {
+          const polydata = reader.getOutputData();
+          const mapper = vtkMapper.newInstance();
+          const actor = vtkActor.newInstance();
+          actor.setMapper(mapper);
+          mapper.setInputData(polydata);
+          actor.getProperty().setColor(1, 0, 0);
+          renderer.addActor(actor);
+          renderer.resetCamera();
+          renderer.getActiveCamera().zoom(0.7);
+          genericRenderer.resize();
+          render()
+        });
       });
     }
 
@@ -435,6 +445,7 @@ function App() {
         setSearchSuggestions([...Array(parseInt(q.toUpperCase().replace('C', '').replace('_', ''))).keys()].map(i => `${q.toUpperCase()}${i + 1}`));
         return;
       } else { // Cx_y
+        setPhenotype(q.toUpperCase())
         const parts = q.toUpperCase().split('_');
         const scaleC = parseInt(parts[0].replace('C', ''))
         setSearchSuggestions([...Array(scaleC).keys()].map(i => `${parts[0]}_${i + 1}`));
@@ -546,7 +557,8 @@ function App() {
       searchBoxRef.current.value = '';
     } else if (params.atlas !== undefined) {
       setSearchBy('MINA')
-      setSearchQuery('C' + params.atlas);
+      setSearched(true);
+      setSearchQuery('C' + params.atlas)
     }
   }, [params]);
 
@@ -688,7 +700,7 @@ function App() {
 
         {Object.keys(pagination).map(table => (
           // since col-span-6 and col-span-12 classes are set via concatenation, purgeCSS won't see it so those classes have to be set in safelist
-          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 && searchBy !== "MUSE" ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
             <h4 className="font-bold text-xl inline">{table === 'geneAnalysis' ? 'Gene analysis' : table === 'heritabilityEstimate' ? 'Heritability estimate' : table === 'geneticCorrelation' ? 'Genetic correlation' : table}</h4>
             <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>
             <div className="inline btn-group float-right">
