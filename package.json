@@ -12,7 +12,7 @@
     "@testing-library/user-event": "^13.5.0",
     "animate.css": "^4.1.1",
     "axios": "^0.26.0",
-    "daisyui": "^1.25.4",
+    "daisyui": "^2.2.2",
     "match-sorter": "^6.3.1",
     "md5": "^2.3.0",
     "react": "^17.0.2",
