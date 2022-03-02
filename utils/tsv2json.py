@@ -39,6 +39,17 @@ def is_float(element):
     except ValueError:
         return False
 
+def read_kv_pairs(kv_file):
+    with open(kv_file, 'r') as f:
+        lines = f.readlines()
+        # skip first line
+        lines = lines[1:]
+        data = {}
+        for line in lines:
+            line = line.split(':')
+            data[line[0].strip()] = line[1].strip()
+    return data
+
 os.chdir("/Users/tim/repos/bridgeport/data")
 df = read_csv("sourcedata/GWAS_SNP_significnat_after_correction_thres_5e-8.tsv")
 write_json("json/GWAS.json", df)
@@ -57,3 +68,13 @@ write_json("json/IWAS.json", df)
 
 df = read_csv("sourcedata/MUSE/MUSE_2_MINA_overlap_index.tsv")
 write_json("json/MUSE.json", df)
+
+df = read_kv_pairs("sourcedata/PWAS/clinical_phenotype_to_dispaly_on_bridgeport.txt")
+json_str = json.dumps(df)
+with open("json/clinical_types.json", 'w') as f:
+    f.write(json_str)
+
+df = read_kv_pairs("sourcedata/PWAS/clinical_phenotype_2_display_on_bridgeport.txt")
+json_str = json.dumps(df)
+with open("json/clinical_types2.json", 'w') as f:
+    f.write(json_str)
