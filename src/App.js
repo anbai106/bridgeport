@@ -300,11 +300,15 @@ function App() {
         const k = `MINA_C${c}_mapped`;
         const fullC = `C${c}_${roi[k]}`;
         const vtkPanel = document.createElement('div');
-        vtkPanel.classList.add('col-span-12', 'sm:col-span-2', 'relative');
+        const anchor = document.createElement('a');
+        anchor.href = `/bridgeport/MINA/${fullC}`; // todo dont hardcode prefix
+        anchor.classList.add('btn', 'btn-xs', 'btn-outline', 'btn-primary')
+        vtkPanel.classList.add('col-span-12', 'sm:col-span-2', 'relative', 'pointer');
         vtkPanel.style.zIndex = 100;
         const vtkPanelLabel = document.createElement('p');
         vtkPanelLabel.classList.add('text-center', 'text-lg', 'font-semibold', 'absolute', 'left-0', 'right-0');
-        vtkPanelLabel.innerText = fullC;
+        anchor.innerText = fullC;
+        vtkPanelLabel.appendChild(anchor);
         vtkPanel.appendChild(vtkPanelLabel);
         vtkContainerRef.current.appendChild(vtkPanel);
         const genericRenderer = vtkGenericRenderWindow.newInstance();
@@ -333,7 +337,7 @@ function App() {
             const actor = vtkActor.newInstance();
             actor.setMapper(mapper);
             mapper.setInputData(polydata);
-            actor.getProperty().setColor(1, 0, 0);
+            actor.getProperty().setColor(0, 0, 1);
             renderer.addActor(actor);
             renderer.resetCamera();
             genericRenderer.resize();
@@ -347,7 +351,7 @@ function App() {
       vtkPanel.classList.add('col-span-12', 'relative');
       vtkPanel.style.bottom = 'calc(30vw - 100px)';
       const vtkPanelLabel = document.createElement('p');
-      vtkPanelLabel.classList.add('text-center', 'text-2xl', 'font-bold', 'absolute', 'left-0', 'right-0', 'bottom-0', 'z-50');
+      vtkPanelLabel.classList.add('text-center', 'text-2xl', 'font-bold', 'absolute', 'left-0', 'right-0', 'bottom-0', 'z-50', 'text-red-500');
       vtkPanelLabel.innerText = roi.ROI_NAME;
       vtkContainerRef.current.appendChild(vtkPanelLabel);
       vtkContainerRef.current.appendChild(vtkPanel);
@@ -588,7 +592,7 @@ function App() {
             <div className={atlas > 0 && phenotype.length === 0 ? "-z-30 animate__animated animate__bounceInDown" : "max-w-lg -z-30 animate__animated animate__bounceInLeft"} ref={vtkContainerRef} />
           </div>
         </div>
-        <p className={atlas > 0 && phenotype.length === 0 ? "-mb-4 -mt-8 z-50 text-right col-span-12 text-gray-500" : "hidden"}>Right click a parcellation to reveal statistics</p>
+        <p className={atlas > 0 && phenotype.length === 0 && searchBy !== 'MUSE' ? "-mb-4 -mt-8 z-50 text-right col-span-12 text-gray-500" : "hidden"}>Left click to rotate brain; right click to reveal parcellation statistics; scroll to zoom.</p>
         {Object.keys(vtkPreviews).map((c => {
           return (
             <div className={atlas > 0 ? "hidden" : "col-span-12 sm:col-span-2"} ref={vtkPreviews[c]} key={c}>
@@ -700,7 +704,7 @@ function App() {
 
         {Object.keys(pagination).map(table => (
           // since col-span-6 and col-span-12 classes are set via concatenation, purgeCSS won't see it so those classes have to be set in safelist
-          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 && searchBy !== "MUSE" ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 && searchBy !== "MUSE" && phenotype.length === 0 ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
             <h4 className="font-bold text-xl inline">{table === 'geneAnalysis' ? 'Gene analysis' : table === 'heritabilityEstimate' ? 'Heritability estimate' : table === 'geneticCorrelation' ? 'Genetic correlation' : table}</h4>
             <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>
             <div className="inline btn-group float-right">
