@@ -349,7 +349,7 @@ function App() {
       // load MUSE vtk
       const vtkPanel = document.createElement('div');
       vtkPanel.classList.add('col-span-12', 'relative');
-      vtkPanel.style.bottom = 'calc(30vw - 100px)';
+      vtkPanel.style.bottom = '38%';
       const vtkPanelLabel = document.createElement('p');
       vtkPanelLabel.classList.add('text-center', 'text-2xl', 'font-bold', 'absolute', 'left-0', 'right-0', 'bottom-0', 'z-50', 'text-red-500');
       vtkPanelLabel.innerText = roi.ROI_NAME;
@@ -382,7 +382,7 @@ function App() {
           actor.getProperty().setColor(1, 0, 0);
           renderer.addActor(actor);
           renderer.resetCamera();
-          renderer.getActiveCamera().zoom(0.7);
+          renderer.getActiveCamera().zoom(0.5);
           genericRenderer.resize();
           render()
         });
