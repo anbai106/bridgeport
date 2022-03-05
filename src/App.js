@@ -14,6 +14,7 @@ import paginateResults from './utils/paginateResults';
 import fancyPlaceholder from './utils/fancyPlaceholder';
 import NavBar from './components/NavBar';
 import Footer from './components/Footer';
+import Loader from './components/Loader';
 
 
 function App() {
@@ -70,7 +71,6 @@ function App() {
     'geneAnalysis': [[]],
     'heritabilityEstimate': [[]],
   });
-  const [phenotype, setPhenotype] = useState(''); // aka MINA e.g. C32_1
   const [atlas, setAtlas] = useState(0); // the 32 in C32_1
   const [typingTimer, setTypingTimer] = useState(null); // auto search timer for suggestions
   const [chartType, setChartType] = useState('manhattan'); // or 'qq'
@@ -87,6 +87,7 @@ function App() {
   const [heritabilityEstimate, setHeritabilityEstimate] = useState([]);
   const [geneticCorrelation, setGeneticCorrelation] = useState([]);
   const [geneAnalysis, setGeneAnalysis] = useState([]);
+  const isPartialMINA = searchQuery.toUpperCase().startsWith('C') && ['32', '64', '128', '256', '512', '1024'].includes(searchQuery.substring(1));
 
   /**
    * helpers
@@ -94,10 +95,12 @@ function App() {
 
   const animateOut = () => {
     setAtlas(0);
-    setPhenotype('');
     setSearched(false);
     setSearchSuggestions([]);
     setSearchQuery('');
+    if (vtkContainerRef.current === null) {
+      return;
+    }
     vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomOutRight');
     vtkContainerRef.current.addEventListener('animationend', () => {
       vtkContainerRef.current.classList.remove('animate__animated', 'animate__zoomOutRight');
@@ -207,9 +210,7 @@ function App() {
           mapper.getInputData().getPointData().setGlobalIds(`C${c}_${i}`);
 
           resetCamera();
-          if (!(atlas > 0 && phenotype.length > 0)) {
-            renderer.getActiveCamera().zoom(0.5);
-          }
+          renderer.getActiveCamera().zoom(0.6);
           // let orientation = actor.getOrientation()
           // actor.setOrientation(orientation[0] + 20, orientation[1] + 25, 0);
           // actor.setOrientation(orientation[0], previewRotation, 0);
@@ -260,7 +261,6 @@ function App() {
         const allActors = renderWindow.getRenderers()[0].getActors();
         const actor = allActors.find(a => a.getMapper().getInputData().getPointData().getGlobalIds() === sortedByDim[0].getMapper().getInputData().getPointData().getGlobalIds());
         const actorName = actor.getMapper().getInputData().getPointData().getGlobalIds()
-        setPhenotype(actorName);
         setSearchQuery(actorName);
         searchBoxRef.current.value = actorName;
         navigate(`/MINA/${actorName}`);
@@ -449,7 +449,6 @@ function App() {
         setSearchSuggestions([...Array(parseInt(q.toUpperCase().replace('C', '').replace('_', ''))).keys()].map(i => `${q.toUpperCase()}${i + 1}`));
         return;
       } else { // Cx_y
-        setPhenotype(q.toUpperCase())
         const parts = q.toUpperCase().split('_');
         const scaleC = parseInt(parts[0].replace('C', ''))
         setSearchSuggestions([...Array(scaleC).keys()].map(i => `${parts[0]}_${i + 1}`));
@@ -558,7 +557,9 @@ function App() {
       animateOut();
       setSearched(false);
       setSearchBy('');
-      searchBoxRef.current.value = '';
+      if (searchBoxRef.current !== null) {
+        searchBoxRef.current.value = '';
+      }
     } else if (params.atlas !== undefined) {
       setSearchBy('MINA')
       setSearched(true);
@@ -566,6 +567,10 @@ function App() {
     }
   }, [params]);
 
+
+  if (GWAS.length === 0 || IWAS.length === 0 || MUSE.length === 0 || heritabilityEstimate.length === 0 || geneAnalysis.length === 0 || geneticCorrelation.length === 0) {
+    return (<Loader />);
+  }
 
   return (
     <div className="min-h-full">
@@ -579,20 +584,20 @@ function App() {
         <h4 className="col-span-12 text-base">MINA is a multi-scale atlas that parcellates the human brain by structural covariance in MRI data over the lifespan and a wide range of disease populations. BRIDGEPORT allows you to interactively browse the atlas in a 3D view and explore the phenotypic landscape and genetic architecture of the human brain. This web portal aims to foster multidisciplinary crosstalk across neuroimaging, machine learning, and genetic communities.</h4>
         {/* data-value is the number of actors loaded, value is the % */}
         <progress className="hidden" style={{ marginBottom: '70vh' }} data-value="0" value="0" min="0" max="100" ref={progressRef}></progress>
-        <div className={atlas > 0 && phenotype.length > 0 ? "col-span-8 z-10 relative" : "hidden"}>
+        <div className={atlas > 0 && !isPartialMINA && searchQuery.toUpperCase()[0] === 'C' ? "col-span-8 z-10 relative" : "hidden"}>
           <div className="tabs">
             <button onClick={() => setChartType('manhattan')} className={chartType === 'manhattan' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>Manhattan</button>
             <button onClick={() => setChartType('qq')} className={chartType === 'qq' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>QQ</button>
           </div>
-          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`data/plot/C${atlas}/${phenotype}_manhattan_plot.png`} alt={phenotype} />
-          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(phenotype.length > 0 && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`data/plot/C${atlas}/${phenotype}_QQ_plot.png`} alt={phenotype} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
+          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(!isPartialMINA && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`data/plot/C${atlas}/${searchQuery.toUpperCase()}_manhattan_plot.png`} alt={searchQuery} />
+          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(!isPartialMINA && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`data/plot/C${atlas}/${searchQuery.toUpperCase()}_QQ_plot.png`} alt={searchQuery} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
         </div>
-        <div className={atlas > 0 ? (phenotype.length === 0 ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh' }}>
-          <div style={phenotype.length === 0 ? { bottom: 'calc(30vw - 100px)' } : {}} className="-z-40 h-full relative">
-            <div className={atlas > 0 && phenotype.length === 0 ? "-z-30 animate__animated animate__bounceInDown" : "max-w-lg -z-30 animate__animated animate__bounceInLeft"} ref={vtkContainerRef} />
+        <div className={atlas > 0 ? (isPartialMINA || searchQuery.toUpperCase()[0] !== 'C' ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh' }}>
+          <div style={isPartialMINA  || searchQuery.toUpperCase()[0] !== 'C' ? { bottom: 'calc(30vw - 100px)' } : {}} className="-z-40 h-full relative">
+            <div className={atlas > 0 && (isPartialMINA || searchQuery.toUpperCase()[0] !== 'C') ? "-z-30 animate__animated animate__bounceInDown" : "max-w-lg -z-30 animate__animated animate__bounceInLeft"} ref={vtkContainerRef} />
           </div>
         </div>
-        <p className={atlas > 0 && phenotype.length === 0 && searchBy !== 'MUSE' ? "-mb-4 -mt-8 z-50 text-right col-span-12 text-gray-500" : "hidden"}>Left click to rotate brain; right click to reveal parcellation statistics; scroll to zoom.</p>
+        <p className={atlas > 0 && searchBy !== 'MUSE' ? "-mb-4 -mt-8 z-50 text-right col-span-12 text-gray-500" : "hidden"}>Left click to rotate brain; right click to reveal parcellation statistics; scroll to zoom.</p>
         {Object.keys(vtkPreviews).map((c => {
           return (
             <div className={atlas > 0 ? "hidden" : "col-span-12 sm:col-span-2"} ref={vtkPreviews[c]} key={c}>
@@ -604,21 +609,7 @@ function App() {
             </div>
           )
         }))}
-        <p className={phenotype.length > 0 ? chartType === 'qq' ? "col-span-12 text-right z-50" : "col-span-12 text-right md:-mt-10 z-50" : "hidden"}><button className="btn btn-link btn-sm" onClick={() => {
-          const actors = window.renderWindow.getRenderers()[0].getActors();
-          for (let i = 0; i < actors.length; i++) {
-            const disabled = actors[i];
-            disabled.getProperty().setOpacity(1);
-            const h1 = parseInt(md5(`C${atlas}_${i}_r`), 16) / 0xffffffffffffffffffffffffffffffff;
-            const h2 = parseInt(md5(`C${atlas}_${i}_g`), 16) / 0xffffffffffffffffffffffffffffffff;
-            const h3 = parseInt(md5(`C${atlas}_${i}_b`), 16) / 0xffffffffffffffffffffffffffffffff;
-            disabled.getProperty().setColor(h1, h2, h3);
-          }
-          setPhenotype('');
-          window.render();
-          window.genericRenderer.resize();
-        }}>Reset selection</button>.</p>
-        <form className={atlas > 0 && phenotype.length === 0 ? "hidden" : "col-span-12"} onSubmit={e => {
+        <form className={atlas > 0 && isPartialMINA ? "hidden" : "col-span-12"} onSubmit={e => {
           e.preventDefault();
           e.stopPropagation();
           if (typingTimer !== null) {
@@ -664,7 +655,7 @@ function App() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
               </button>
-              <ul tabIndex="0" className={searchSuggestions.length > 0 && !searched ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
+              <ul tabIndex="0" className={searchSuggestions.length > 0 && !searched && searchBy !== '' ? 'p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-full max-h-96 overflow-y-scroll' : 'hidden'}>
                 {searchSuggestions.map((x, i) => {
                   return (
                     <li key={i} className="hover:bg-primary-100 z-50">
@@ -704,7 +695,7 @@ function App() {
 
         {Object.keys(pagination).map(table => (
           // since col-span-6 and col-span-12 classes are set via concatenation, purgeCSS won't see it so those classes have to be set in safelist
-          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 && searchBy !== "MUSE" ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 && searchBy !== "MUSE" && !isPartialMINA ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
             <h4 className="font-bold text-xl inline">{table === 'geneAnalysis' ? 'Gene analysis' : table === 'heritabilityEstimate' ? 'Heritability estimate' : table === 'geneticCorrelation' ? 'Genetic correlation' : table}</h4>
             <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>
             <div className="inline btn-group float-right">
