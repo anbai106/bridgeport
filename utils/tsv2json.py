@@ -3,7 +3,7 @@ import os
 import json
 
 # can't use pd.read_csv / to_json because it doesn't support arbitrary floating point precision
-def read_csv(csv_file):
+def read_csv(csv_file, full_names = None):
     with open(csv_file, 'r') as f:
         lines = f.readlines()
         header = lines[0].strip().split('\t')
@@ -12,7 +12,7 @@ def read_csv(csv_file):
             line = line.strip().split('\t')
             row = {}
             for i, col in enumerate(line):
-                row[header[i]] = col
+                row[header[i]] = full_names[col] if header[i] == 'trait' and full_names  is not None and col in full_names else col
             data.append(row)
     return data
 
@@ -57,24 +57,18 @@ write_json("json/GWAS.json", df)
 df = read_csv("sourcedata/Gene_analysis/bridgeport_significant_gene.tsv")
 write_json("json/gene_analysis.json", df)
 
-df = read_csv("sourcedata/Genetic_correlation/bridgeport_genetic_correlation.tsv")
+# this file corresponds to genetic correlation
+kv = read_kv_pairs("sourcedata/PWAS/clinical_phenotype_2_display_on_bridgeport.txt")
+df = read_csv("sourcedata/Genetic_correlation/bridgeport_genetic_correlation.tsv", full_names=kv)
 write_json("json/genetic_correlation.json", df)
 
 df = read_csv("sourcedata/Heritability_estimate/bridgeport_heritability_estimate.tsv")
 write_json("json/heritability_estimate.json", df)
 
-df = read_csv("sourcedata/IWAS/bridgeport_iwas.tsv")
+# this file corresponds to IWAS
+kv = read_kv_pairs("sourcedata/PWAS/clinical_phenotype_to_dispaly_on_bridgeport.txt")
+df = read_csv("sourcedata/IWAS/bridgeport_iwas.tsv", full_names=kv)
 write_json("json/IWAS.json", df)
 
 df = read_csv("sourcedata/MUSE/MUSE_2_MINA_overlap_index.tsv")
 write_json("json/MUSE.json", df)
-
-df = read_kv_pairs("sourcedata/PWAS/clinical_phenotype_to_dispaly_on_bridgeport.txt")
-json_str = json.dumps(df)
-with open("json/clinical_types.json", 'w') as f:
-    f.write(json_str)
-
-df = read_kv_pairs("sourcedata/PWAS/clinical_phenotype_2_display_on_bridgeport.txt")
-json_str = json.dumps(df)
-with open("json/clinical_types2.json", 'w') as f:
-    f.write(json_str)
