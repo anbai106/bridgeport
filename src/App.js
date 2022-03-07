@@ -261,7 +261,6 @@ function App() {
         const allActors = renderWindow.getRenderers()[0].getActors();
         const actor = allActors.find(a => a.getMapper().getInputData().getPointData().getGlobalIds() === sortedByDim[0].getMapper().getInputData().getPointData().getGlobalIds());
         const actorName = actor.getMapper().getInputData().getPointData().getGlobalIds()
-        setSearchQuery(actorName);
         searchBoxRef.current.value = actorName;
         navigate(`/MINA/${actorName}`);
 
@@ -562,8 +561,32 @@ function App() {
       }
     } else if (params.atlas !== undefined) {
       setSearchBy('MINA')
-      setSearched(true);
+      setSearched(true)
       setSearchQuery('C' + params.atlas)
+    } else if (params.MINA !== undefined) {
+      setSearchBy('MINA')
+      setSearched(true)
+      setSearchQuery(params.MINA)
+    } else if (params.query !== undefined) {
+      setSearchBy('')
+      setSearched(true)
+      setSearchQuery(params.query)
+    } else if (params.SNP !== undefined) {
+      setSearchBy('SNP')
+      setSearched(true)
+      setSearchQuery(params.SNP)
+    } else if (params.IWAS !== undefined) {
+      setSearchBy('IWAS')
+      setSearched(true)
+      setSearchQuery(params.IWAS)
+    } else if (params.geneAnalysis !== undefined) {
+      setSearchBy('geneAnalysis')
+      setSearched(true)
+      setSearchQuery(params.geneAnalysis)
+    } else if (params.MUSE !== undefined) {
+      setSearchBy('MUSE')
+      setSearched(true)
+      setSearchQuery(params.MUSE)
     }
   }, [params]);
 
@@ -617,7 +640,6 @@ function App() {
           }
           setTypingTimer(null);
           const searchBox = e.target.querySelector('input');
-          setSearchQuery(searchBox.value);
           navigate(`/${searchBy === '' ? 'search' : searchBy}/${searchBox.value}`);
         }}>
           <div className="form-control my-2">
@@ -663,7 +685,6 @@ function App() {
                         e.preventDefault();
                         searchBoxRef.current.value = x;
                         navigate(`/${searchBy === '' ? 'search' : searchBy}/${x}`);
-                        setSearchQuery(x);
                       }
                       } className="btn-ghost text-left inline w-fit normal-case font-medium">{x}</button>
                     </li>
