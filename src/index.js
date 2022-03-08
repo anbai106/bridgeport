@@ -15,8 +15,8 @@ ReactDOM.render(
         <Route path="/search" element={<App />}>
           <Route path=":query" element={<App />} />
         </Route>
-        <Route path="/MINA" element={<App />}>
-          <Route path=":MINA" element={<App />} />
+        <Route path="/MuSIC" element={<App />}>
+          <Route path=":MuSIC" element={<App />} />
         </Route>
         <Route path="/SNP" element={<App />}>
           <Route path=":SNP" element={<App />} />

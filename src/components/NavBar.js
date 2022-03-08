@@ -23,7 +23,7 @@ const NavBar = () => {
                 </li>
                 <li>
                     <div className="dropdown dropdown-end">
-                        <button className="btn btn-link text-base text-base-content hover:bg-gray-200 h-100 hover:no-underline font-normal normal-case rounded-0" style={{ height: '100%', borderRadius: "0px" }} tabIndex="0">Download MINA</button>
+                        <button className="btn btn-link text-base text-base-content hover:bg-gray-200 h-100 hover:no-underline font-normal normal-case rounded-0" style={{ height: '100%', borderRadius: "0px" }} tabIndex="0">Download MuSIC</button>
                         <ul tabIndex="0" className="p-0 shadow menu dropdown-content bg-base-100 rounded-box w-max" style={{ padding: 0 }}>
                             {[32, 64, 128, 256, 512, 1024].map(i => (
                                 <li key={i} className="p-0 m-0 w-full">
@@ -76,7 +76,7 @@ const NavBar = () => {
                                 <code>curl http://localhost</code>
                             </pre>
                         </div> */}
-                        <p>GWAS and MINA full results will be available in March.</p>
+                        <p>GWAS and MuSIC full results will be available in March.</p>
                     </div>
                     <div className="modal-action">
                         {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}

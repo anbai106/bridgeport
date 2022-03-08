@@ -1,6 +1,6 @@
 const fancyPlaceholder = searchBy => {
     switch (searchBy) {
-        case 'MINA':
+        case 'MuSIC':
             return 'Type Cx_y to search for a phenotype';
         case 'SNP':
             return 'Search for a SNP e.g. rs123456789';

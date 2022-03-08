@@ -29,9 +29,9 @@ function App() {
   let initialSearchQuery = "";
   if (params.query !== undefined) {
     initialSearchQuery = params.query
-  } else if (params.MINA !== undefined) {
-    initialSearchBy = "MINA"
-    initialSearchQuery = params.MINA
+  } else if (params.MuSIC !== undefined) {
+    initialSearchBy = "MuSIC"
+    initialSearchQuery = params.MuSIC
   } else if (params.MUSE !== undefined) {
     initialSearchBy = "MUSE"
     initialSearchQuery = params.MUSE
@@ -87,7 +87,7 @@ function App() {
   const [heritabilityEstimate, setHeritabilityEstimate] = useState([]);
   const [geneticCorrelation, setGeneticCorrelation] = useState([]);
   const [geneAnalysis, setGeneAnalysis] = useState([]);
-  const isPartialMINA = searchQuery.toUpperCase().startsWith('C') && ['32', '64', '128', '256', '512', '1024'].includes(searchQuery.substring(1));
+  const isPartialMuSIC = searchQuery.toUpperCase().startsWith('C') && ['32', '64', '128', '256', '512', '1024'].includes(searchQuery.substring(1));
 
   /**
    * helpers
@@ -237,7 +237,7 @@ function App() {
             genericRenderer.resize(); // necessary! to fix blurriness
           }
         }
-        reader.setUrl(`data/MINA/C${c}/C${c}_C${i}.vtk`).then(functions[i - 1]);
+        reader.setUrl(`data/MuSIC/C${c}/C${c}_C${i}.vtk`).then(functions[i - 1]);
 
       }
 
@@ -263,7 +263,7 @@ function App() {
         const actor = allActors.find(a => a.getMapper().getInputData().getPointData().getGlobalIds() === sortedByDim[0].getMapper().getInputData().getPointData().getGlobalIds());
         const actorName = actor.getMapper().getInputData().getPointData().getGlobalIds()
         searchBoxRef.current.value = actorName;
-        navigate(`/MINA/${actorName}`);
+        navigate(`/MuSIC/${actorName}`);
 
 
         // get list of actors, set opacity to 0.5
@@ -294,14 +294,14 @@ function App() {
         vtkContainerRef.current.classList.add('grid', 'grid-cols-12');
       }, { once: true });
 
-      // create 6 renderers for each of the MINA atlases
+      // create 6 renderers for each of the MuSIC atlases
       [32, 64, 128, 256, 512, 1024].forEach(c => {
-        // load MINA parcellation associated with MUSE ROI
-        const k = `MINA_C${c}_mapped`;
+        // load MuSIC parcellation associated with MUSE ROI
+        const k = `MuSIC_C${c}_mapped`;
         const fullC = `C${c}_${roi[k]}`;
         const vtkPanel = document.createElement('div');
         const anchor = document.createElement('a');
-        anchor.href = `/bridgeport/MINA/${fullC}`; // todo dont hardcode prefix
+        anchor.href = `/bridgeport/MuSIC/${fullC}`; // todo dont hardcode prefix
         anchor.classList.add('btn', 'btn-xs', 'btn-outline', 'btn-primary')
         vtkPanel.classList.add('col-span-12', 'sm:col-span-2', 'relative', 'pointer');
         vtkPanel.style.zIndex = 100;
@@ -319,8 +319,8 @@ function App() {
         genericRenderer.setContainer(vtkPanel);
 
         const reader = vtkPolyDataReader.newInstance();
-        // load full MINA atlas to show position of parcellation
-        reader.setUrl(`/bridgeport/data/MINA/C${c}/C${c}_all.vtk`).then(() => {
+        // load full MuSIC atlas to show position of parcellation
+        reader.setUrl(`/bridgeport/data/MuSIC/C${c}/C${c}_all.vtk`).then(() => {
           const polydata = reader.getOutputData();
           const mapper = vtkMapper.newInstance();
           const actor = vtkActor.newInstance();
@@ -331,7 +331,7 @@ function App() {
           renderer.addActor(actor);
           renderer.getActiveCamera().zoom(0.5);
           // render()
-          reader.setUrl(`/bridgeport/data/MINA/C${c}/${fullC}.vtk`).then(() => {
+          reader.setUrl(`/bridgeport/data/MuSIC/C${c}/${fullC}.vtk`).then(() => {
             const polydata = reader.getOutputData();
             const mapper = vtkMapper.newInstance();
             const actor = vtkActor.newInstance();
@@ -362,8 +362,8 @@ function App() {
       renderer.setBackground(1, 1, 1);
       genericRenderer.setContainer(vtkPanel);
       const reader = vtkPolyDataReader.newInstance();
-      // overlay whole MINA atlas on MUSE vtk
-      reader.setUrl(`/bridgeport/data/MINA/C32/C32_all.vtk`).then(() => {
+      // overlay whole MuSIC atlas on MUSE vtk
+      reader.setUrl(`/bridgeport/data/MuSIC/C32/C32_all.vtk`).then(() => {
         const polydata = reader.getOutputData();
         const mapper = vtkMapper.newInstance();
         const actor = vtkActor.newInstance();
@@ -396,7 +396,7 @@ function App() {
       'geneAnalysis': [[]],
       'heritabilityEstimate': [[]],
     };
-    if (searchBy === 'MINA' || (q.toUpperCase().startsWith('C') && searchBy === '')) {
+    if (searchBy === 'MuSIC' || (q.toUpperCase().startsWith('C') && searchBy === '')) {
       // need to search everything (gene analysis, heritability estimates, genetic correlation, GWAS and IWAS)
       matches['GWAS'] = matchSorter(GWAS, q, {
         keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
@@ -565,13 +565,13 @@ function App() {
         searchBoxRef.current.value = '';
       }
     } else if (params.atlas !== undefined) {
-      setSearchBy('MINA')
+      setSearchBy('MuSIC')
       setSearched(true)
       setSearchQuery('C' + params.atlas)
-    } else if (params.MINA !== undefined) {
-      setSearchBy('MINA')
+    } else if (params.MuSIC !== undefined) {
+      setSearchBy('MuSIC')
       setSearched(true)
-      setSearchQuery(params.MINA)
+      setSearchQuery(params.MuSIC)
     } else if (params.query !== undefined) {
       setSearchBy('')
       setSearched(true)
@@ -609,20 +609,20 @@ function App() {
           <NavBar />
         </div>
         <h1 className="col-span-12 text-3xl font-bold">BRIDGEPORT: Bridge knowledge across brain imaging, genomics, and clinical phenotypes</h1>
-        <h4 className="col-span-12 text-base">MINA is a multi-scale atlas that parcellates the human brain by structural covariance in MRI data over the lifespan and a wide range of disease populations. BRIDGEPORT allows you to interactively browse the atlas in a 3D view and explore the phenotypic landscape and genetic architecture of the human brain. This web portal aims to foster multidisciplinary crosstalk across neuroimaging, machine learning, and genetic communities.</h4>
+        <h4 className="col-span-12 text-base">MuSIC is a multi-scale atlas that parcellates the human brain by structural covariance in MRI data over the lifespan and a wide range of disease populations. BRIDGEPORT allows you to interactively browse the atlas in a 3D view and explore the phenotypic landscape and genetic architecture of the human brain. This web portal aims to foster multidisciplinary crosstalk across neuroimaging, machine learning, and genetic communities.</h4>
         {/* data-value is the number of actors loaded, value is the % */}
         <progress className="hidden" style={{ marginBottom: '70vh' }} data-value="0" value="0" min="0" max="100" ref={progressRef}></progress>
-        <div className={atlas > 0 && !isPartialMINA && searchQuery.toUpperCase()[0] === 'C' ? "col-span-8 z-10 relative" : "hidden"}>
+        <div className={atlas > 0 && !isPartialMuSIC && searchQuery.toUpperCase()[0] === 'C' ? "col-span-8 z-10 relative" : "hidden"}>
           <div className="tabs">
             <button onClick={() => setChartType('manhattan')} className={chartType === 'manhattan' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>Manhattan</button>
             <button onClick={() => setChartType('qq')} className={chartType === 'qq' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>QQ</button>
           </div>
-          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(!isPartialMINA && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`data/plot/C${atlas}/${searchQuery.toUpperCase()}_manhattan_plot.png`} alt={searchQuery} />
-          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(!isPartialMINA && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`data/plot/C${atlas}/${searchQuery.toUpperCase()}_QQ_plot.png`} alt={searchQuery} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
+          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(!isPartialMuSIC && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`data/plot/C${atlas}/${searchQuery.toUpperCase()}_manhattan_plot.png`} alt={searchQuery} />
+          <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(!isPartialMuSIC && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`data/plot/C${atlas}/${searchQuery.toUpperCase()}_QQ_plot.png`} alt={searchQuery} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
         </div>
-        <div className={atlas > 0 ? (isPartialMINA || searchQuery.toUpperCase()[0] !== 'C' ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh' }}>
-          <div style={isPartialMINA  || searchQuery.toUpperCase()[0] !== 'C' ? { bottom: 'calc(30vw - 100px)' } : {}} className="-z-40 h-full relative">
-            <div className={atlas > 0 && (isPartialMINA || searchQuery.toUpperCase()[0] !== 'C') ? "-z-30 animate__animated animate__bounceInDown" : "max-w-lg -z-30 animate__animated animate__bounceInLeft"} ref={vtkContainerRef} />
+        <div className={atlas > 0 ? (isPartialMuSIC || searchQuery.toUpperCase()[0] !== 'C' ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh' }}>
+          <div style={isPartialMuSIC  || searchQuery.toUpperCase()[0] !== 'C' ? { bottom: 'calc(30vw - 100px)' } : {}} className="-z-40 h-full relative">
+            <div className={atlas > 0 && (isPartialMuSIC || searchQuery.toUpperCase()[0] !== 'C') ? "-z-30 animate__animated animate__bounceInDown" : "max-w-lg -z-30 animate__animated animate__bounceInLeft"} ref={vtkContainerRef} />
           </div>
         </div>
         <p className={atlas > 0 && searchBy !== 'MUSE' ? "-mb-4 -mt-8 z-50 text-right col-span-12 text-gray-500" : "hidden"}>Left click to rotate brain; right click to reveal parcellation statistics; scroll to zoom.</p>
@@ -637,7 +637,7 @@ function App() {
             </div>
           )
         }))}
-        <form className={atlas > 0 && isPartialMINA ? "hidden" : "col-span-12"} onSubmit={e => {
+        <form className={atlas > 0 && isPartialMuSIC ? "hidden" : "col-span-12"} onSubmit={e => {
           e.preventDefault();
           e.stopPropagation();
           if (typingTimer !== null) {
@@ -658,7 +658,7 @@ function App() {
               }}>&larr; Back</button>
               <select className={"select select-bordered select-primary sm:rounded-r-none sm:absolute sm:w-auto w-full mb-2 sm:mb-0 top-0 " + (searched ? "left-24" : "left-0")} onChange={x => setSearchBy(x.target.value)}>
                 <option selected={searchBy === '' || searchBy === 'search'} value="">Search by</option>
-                <option selected={searchBy === 'MINA'} value="MINA">MINA</option>
+                <option selected={searchBy === 'MuSIC'} value="MuSIC">MuSIC</option>
                 <option selected={searchBy === 'SNP'} value="SNP">SNP</option>
                 <option selected={searchBy === 'geneAnalysis'} value="geneAnalysis">Gene symbol</option>
                 <option selected={searchBy === 'IWAS'} value="IWAS">Clinical traits</option>
@@ -709,11 +709,11 @@ function App() {
             <label>
               <h4>Bridgeport allows us to browse the results of PSC-wide association studies and genome-wide association studies. It currently supports the following searching criteria:</h4>
               <ul className="list-disc text-sm text-base-content text-opacity-60 pl-8">
-                <li>MINA PSC: users can search by patterns of structural covariance (PSC) defined by MINA. One PSC represents a brain region that is driven by structural covariance in imaging data.</li>
+                <li>MuSIC PSC: users can search by patterns of structural covariance (PSC) defined by MuSIC. One PSC represents a brain region that is driven by structural covariance in imaging data.</li>
                 <li>SNP: users can search by single nucleotide polymorphism. We currently only include common genetic variants of the human genome.</li>
                 <li>Gene symbol: users can search by gene symbols. Gene annotation is performed to map the SNPs from Phase 3 of 1000 Genomes to genes based on the GRCh37 build.</li>
                 <li>Clinical traits: users can search by clinical traits. We performed PSC-wide association studies and genetic correlation analyses for various clinical phenotypes.</li>
-                <li>MUSE: users can also search by traditional brain anatomy terminology, e.g., left hippocampus. Here we map each brain region of the MUSE atlas to the nearest MINA PSC.</li>
+                <li>MUSE: users can also search by traditional brain anatomy terminology, e.g., left hippocampus. Here we map each brain region of the MUSE atlas to the nearest MuSIC PSC.</li>
               </ul>
             </label>
           </div>
@@ -721,7 +721,7 @@ function App() {
 
         {Object.keys(pagination).map(table => (
           // since col-span-6 and col-span-12 classes are set via concatenation, purgeCSS won't see it so those classes have to be set in safelist
-          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 && searchBy !== "MUSE" && !isPartialMINA ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 && searchBy !== "MUSE" && !isPartialMuSIC ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
             <h4 className="font-bold text-xl inline">{table === 'geneAnalysis' ? 'Gene analysis' : table === 'heritabilityEstimate' ? 'Heritability estimate' : table === 'geneticCorrelation' ? 'Genetic correlation' : table}</h4>
             <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>
             <div className="inline btn-group float-right">
