@@ -530,7 +530,6 @@ function App() {
         geneAnalysis: 0,
         heritabilityEstimate: 0,
       });
-      setSearched(true);
       searchBoxRef.current.value = q;
     }
     // else {
@@ -566,11 +565,11 @@ function App() {
       }
     } else if (params.atlas !== undefined) {
       setSearchBy('MuSIC')
-      setSearched(true)
+      setSearched(!params.atlas.endsWith('_'))
       setSearchQuery('C' + params.atlas)
     } else if (params.MuSIC !== undefined) {
       setSearchBy('MuSIC')
-      setSearched(true)
+      setSearched(!params.MuSIC.endsWith('_'))
       setSearchQuery(params.MuSIC)
     } else if (params.query !== undefined) {
       setSearchBy('')
@@ -656,7 +655,12 @@ function App() {
                 setSearched(false);
                 setSearchBy('');
               }}>&larr; Back</button>
-              <select className={"select select-bordered select-primary sm:rounded-r-none sm:absolute sm:w-auto w-full mb-2 sm:mb-0 top-0 " + (searched ? "left-24" : "left-0")} onChange={x => setSearchBy(x.target.value)}>
+              <select className={"select select-bordered select-primary sm:rounded-r-none sm:absolute sm:w-auto w-full mb-2 sm:mb-0 top-0 " + (searched ? "left-24" : "left-0")} onChange={x => {
+                setSearchBy(x.target.value);
+                setSearchQuery('');
+                setSearched(false);
+                searchBoxRef.current.value = '';
+              }}>
                 <option selected={searchBy === '' || searchBy === 'search'} value="">Search by</option>
                 <option selected={searchBy === 'MuSIC'} value="MuSIC">MuSIC</option>
                 <option selected={searchBy === 'SNP'} value="SNP">SNP</option>
@@ -888,9 +892,9 @@ function App() {
             </div>
             <table className="table w-full table-compact">
               <thead>
-                {table === 'GWAS' ? <tr><th></th><th>ID</th><th>P-value</th><th>Beta</th></tr> :
-                  table === 'IWAS' ? <tr><th></th><th>Trait</th><th>P-value</th><th>ES</th></tr> :
-                    table === 'geneticCorrelation' ? <tr><th></th><th>Trait</th><th>Mean</th><th>Std. Dev.</th><th>P-value</th></tr> :
+                {table === 'GWAS' ? <tr><th></th><th>IDP</th><th>Chromosome</th><th>Position</th><th>ID</th><th>Ref</th><th>Alt</th><th>A1</th><th>Test</th><th>OBS_CT</th><th>Beta</th><th>SE</th><th>T Stat</th><th>P-value</th></tr> :
+                  table === 'IWAS' ? <tr><th></th><th>IDP</th><th>Trait</th><th>P-value</th><th>ES</th></tr> :
+                    table === 'geneticCorrelation' ? <tr><th></th><th>IDP</th><th>Trait</th><th>Mean</th><th>Std. Dev.</th><th>Z stat</th><th>P-value</th></tr> :
                       table === 'geneAnalysis' ? <tr><th></th><th>Gene</th><th>Chromosome</th><th>Start - Stop</th><th>NSNPS</th><th>NPARAM</th><th>N</th><th>Z Stat</th><th>P-value</th></tr> :
                         table === 'heritabilityEstimate' ? <tr><th></th><th>Heritability</th><th>P-value</th></tr> :
                           <div>Error: unknown table {table}</div>}
@@ -901,7 +905,7 @@ function App() {
                     case 'GWAS':
                       return (
                         <tr key={i} className="hover">
-                          <td>{x.IDP}</td><td>{x.ID}</td><td>{x.P}</td><td>{x.BETA}</td>
+                          <td>{x.IDP}</td><td>{x.CHROM}</td><td>{x.POS}</td><td>{x.ID}</td><td>{x.REF}</td><td>{x.ALT}</td><td>{x.A1}</td><td>{x.TEST}</td><td>{x.OBS_CT}</td><td>{x.BETA}</td><td>{x.SE}</td><td>{x.T_STAT}</td><td>{x.P}</td>
                         </tr>
                       );
                     case 'IWAS':
@@ -913,7 +917,7 @@ function App() {
                     case 'geneticCorrelation':
                       return (
                         <tr key={i} className="hover">
-                          <td>{x.IDP}</td><td>{x.trait}</td><td>{x.gc_mean}</td><td>{x.gc_std}</td><td>{x.P}</td>
+                          <td>{x.IDP}</td><td>{x.trait}</td><td>{x.gc_mean}</td><td>{x.gc_std}</td><td>{x.Z}</td><td>{x.P}</td>
                         </tr>
                       );
                     case 'geneAnalysis':
