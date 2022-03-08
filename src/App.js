@@ -152,6 +152,7 @@ function App() {
     }
 
     const renderAtlas = (c, cb = null) => {
+      setAtlas(c);
       vtkContainerRef.current.innerHTML = '';
       progressRef.current.classList.remove('hidden');
       progressRef.current.classList.add("progress", "progress-secondary", "z-50", "col-span-12", "w-full");
@@ -440,7 +441,6 @@ function App() {
       if (q.indexOf('_') === -1) { // Cx
         setSearchSuggestions(['C32_', 'C64_', 'C128_', 'C256_', 'C512_', 'C1024_']);
         if (!suggestionsOnly) {
-          setAtlas(q.substring(1))
           renderAtlas(q.substring(1))
         }
         return;
@@ -456,7 +456,6 @@ function App() {
           if (scaleC === atlas) {
             greyOut(q);
           } else {
-            setAtlas(scaleC);
             vtkContainerRef.current.classList.add('animate__animated', 'animate__zoomInLeft');
             vtkContainerRef.current.classList.remove('col-span-12', 'sm:col-span-2', 'grid', 'grid-cols-12');
             vtkContainerRef.current.addEventListener('animationend', () => {
@@ -468,6 +467,7 @@ function App() {
       }
     } else if (searchBy === 'SNP' || (q.startsWith('rs') && searchBy === '')) {
       // only need to search GWAS
+      setAtlas(0);
       // slice GWAS if search query short to avoid slow search
       matches['GWAS'] = matchSorter(q.length > 4 ? GWAS : GWAS.slice(0, 100), q, {
         keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'ID' }],
@@ -480,6 +480,7 @@ function App() {
       setSearchSuggestions(matches['GWAS'].map(item => item.ID).filter((value, index, self) => self.indexOf(value) === index));
     } else if (searchBy === 'IWAS' || (searchBy === '' && includesAndStartsWith(q, [...new Set(IWAS.map(d => d.trait))]))) {
       // only need to search IWAS
+      setAtlas(0);
       matches['IWAS'] = matchSorter(IWAS, q, {
         keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'trait' }],
         sorter: rankedItems => {
@@ -507,6 +508,7 @@ function App() {
       }
     } else { // presumably a gene symbol
       // only need to search gene analysis
+      setAtlas(0);
       matches['geneAnalysis'] = matchSorter(geneAnalysis, q, {
         keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'GENE' }],
         sorter: rankedItems => {
@@ -529,6 +531,7 @@ function App() {
         heritabilityEstimate: 0,
       });
       setSearched(true);
+      searchBoxRef.current.value = q;
     }
     // else {
     //   setSearched(false);
@@ -536,8 +539,10 @@ function App() {
   } // end of submitSearch
 
   // search when search query changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(submitSearch, [searchQuery, GWAS, IWAS, MUSE, geneAnalysis, heritabilityEstimate, geneticCorrelation]);
   // only set suggestions when searchBy changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => submitSearch(null, true), [searchBy]);
 
   // load data
@@ -660,7 +665,7 @@ function App() {
                 <option selected={searchBy === 'MUSE'} value="MUSE">MUSE</option>
               </select>
 
-              <input type="text" placeholder={fancyPlaceholder(searchBy)} className={(searched ? "sm:pl-64" : "sm:pl-40") + " input input-bordered input-primary w-full mb-2 sm:mb-0"} ref={searchBoxRef} onChange={x => {
+              <input type="text" defaultValue={searchQuery} placeholder={fancyPlaceholder(searchBy)} className={(searched ? "sm:pl-64" : "sm:pl-40") + " input input-bordered input-primary w-full mb-2 sm:mb-0"} ref={searchBoxRef} onChange={x => {
                 // wait to see if the user has stopped typing
                 if (typingTimer !== null) {
                   clearTimeout(typingTimer);
