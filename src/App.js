@@ -297,17 +297,16 @@ function App() {
       // create 6 renderers for each of the MuSIC atlases
       [32, 64, 128, 256, 512, 1024].forEach(c => {
         // load MuSIC parcellation associated with MUSE ROI
-        const k = `MuSIC_C${c}_mapped`;
-        const fullC = `C${c}_${roi[k]}`;
+        const k = `MINA_C${c}_mapped`;
         const vtkPanel = document.createElement('div');
         const anchor = document.createElement('a');
-        anchor.href = `/bridgeport/MuSIC/${fullC}`; // todo dont hardcode prefix
+        anchor.href = `/bridgeport/MuSIC/C${c}_${roi[k].replace('C', '')}`; // todo dont hardcode prefix
         anchor.classList.add('btn', 'btn-xs', 'btn-outline', 'btn-primary')
         vtkPanel.classList.add('col-span-12', 'sm:col-span-2', 'relative', 'pointer');
         vtkPanel.style.zIndex = 100;
         const vtkPanelLabel = document.createElement('p');
         vtkPanelLabel.classList.add('text-center', 'text-lg', 'font-semibold', 'absolute', 'left-0', 'right-0');
-        anchor.innerText = fullC;
+        anchor.innerText = `C${c}_${roi[k].replace('C', '')}`;
         vtkPanelLabel.appendChild(anchor);
         vtkPanel.appendChild(vtkPanelLabel);
         vtkContainerRef.current.appendChild(vtkPanel);
@@ -331,7 +330,7 @@ function App() {
           renderer.addActor(actor);
           renderer.getActiveCamera().zoom(0.5);
           // render()
-          reader.setUrl(`/bridgeport/data/MuSIC/C${c}/${fullC}.vtk`).then(() => {
+          reader.setUrl(`/bridgeport/data/MuSIC/C${c}/C${c}_${roi[k]}.vtk`).then(() => {
             const polydata = reader.getOutputData();
             const mapper = vtkMapper.newInstance();
             const actor = vtkActor.newInstance();
@@ -571,6 +570,9 @@ function App() {
       setSearchBy('MuSIC')
       setSearched(!params.MuSIC.endsWith('_'))
       setSearchQuery(params.MuSIC)
+      if (params.MuSIC.endsWith('_')) {
+        setAtlas(0);
+      }
     } else if (params.query !== undefined) {
       setSearchBy('')
       setSearched(true)
@@ -611,7 +613,7 @@ function App() {
         <h4 className="col-span-12 text-base">MuSIC is a multi-scale atlas that parcellates the human brain by structural covariance in MRI data over the lifespan and a wide range of disease populations. BRIDGEPORT allows you to interactively browse the atlas in a 3D view and explore the phenotypic landscape and genetic architecture of the human brain. This web portal aims to foster multidisciplinary crosstalk across neuroimaging, machine learning, and genetic communities.</h4>
         {/* data-value is the number of actors loaded, value is the % */}
         <progress className="hidden" style={{ marginBottom: '70vh' }} data-value="0" value="0" min="0" max="100" ref={progressRef}></progress>
-        <div className={atlas > 0 && !isPartialMuSIC && searchQuery.toUpperCase()[0] === 'C' ? "col-span-8 z-10 relative" : "hidden"}>
+        <div className={atlas > 0 && !isPartialMuSIC && searchQuery.toUpperCase()[0] === 'C' && searchBy === 'MuSIC' ? "col-span-8 z-10 relative" : "hidden"}>
           <div className="tabs">
             <button onClick={() => setChartType('manhattan')} className={chartType === 'manhattan' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>Manhattan</button>
             <button onClick={() => setChartType('qq')} className={chartType === 'qq' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>QQ</button>
@@ -619,12 +621,12 @@ function App() {
           <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(!isPartialMuSIC && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`data/plot/C${atlas}/${searchQuery.toUpperCase()}_manhattan_plot.png`} alt={searchQuery} />
           <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(!isPartialMuSIC && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`data/plot/C${atlas}/${searchQuery.toUpperCase()}_QQ_plot.png`} alt={searchQuery} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
         </div>
-        <div className={atlas > 0 ? (isPartialMuSIC || searchQuery.toUpperCase()[0] !== 'C' ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh' }}>
-          <div style={isPartialMuSIC  || searchQuery.toUpperCase()[0] !== 'C' ? { bottom: 'calc(30vw - 100px)' } : {}} className="-z-40 h-full relative">
-            <div className={atlas > 0 && (isPartialMuSIC || searchQuery.toUpperCase()[0] !== 'C') ? "-z-30 animate__animated animate__bounceInDown" : "max-w-lg -z-30 animate__animated animate__bounceInLeft"} ref={vtkContainerRef} />
+        <div className={atlas > 0 ? (isPartialMuSIC || searchQuery.toUpperCase()[0] !== 'C' || searchBy === 'MUSE' ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh' }}>
+          <div style={isPartialMuSIC || searchQuery.toUpperCase()[0] !== 'C' ? { bottom: 'calc(30vw - 100px)' } : {}} className="-z-40 h-full relative">
+            <div className={atlas > 0 && (isPartialMuSIC || searchBy === 'MUSE' || searchQuery.toUpperCase()[0] !== 'C') ? "-z-30 animate__animated animate__bounceInDown" : "max-w-lg -z-30 animate__animated animate__bounceInLeft"} ref={vtkContainerRef} />
           </div>
         </div>
-        <p className={atlas > 0 && searchBy !== 'MUSE' ? "-mb-4 -mt-8 z-50 text-right col-span-12 text-gray-500" : "hidden"}>Left click to rotate brain; right click to reveal parcellation statistics; scroll to zoom.</p>
+        <p className={atlas > 0 && searchBy !== 'MUSE' ? "z-50 text-right col-span-12 text-gray-500" : "hidden"}>Left click to rotate brain; right click to reveal parcellation statistics; scroll to zoom.</p>
         {Object.keys(vtkPreviews).map((c => {
           return (
             <div className={atlas > 0 ? "hidden" : "col-span-12 sm:col-span-2"} ref={vtkPreviews[c]} key={c}>
@@ -892,11 +894,55 @@ function App() {
             </div>
             <table className="table w-full table-compact">
               <thead>
-                {table === 'GWAS' ? <tr><th></th><th>IDP</th><th>Chromosome</th><th>Position</th><th>ID</th><th>Ref</th><th>Alt</th><th>A1</th><th>Test</th><th>OBS_CT</th><th>Beta</th><th>SE</th><th>T Stat</th><th>P-value</th></tr> :
-                  table === 'IWAS' ? <tr><th></th><th>IDP</th><th>Trait</th><th>P-value</th><th>ES</th></tr> :
-                    table === 'geneticCorrelation' ? <tr><th></th><th>IDP</th><th>Trait</th><th>Mean</th><th>Std. Dev.</th><th>Z stat</th><th>P-value</th></tr> :
-                      table === 'geneAnalysis' ? <tr><th></th><th>Gene</th><th>Chromosome</th><th>Start - Stop</th><th>NSNPS</th><th>NPARAM</th><th>N</th><th>Z Stat</th><th>P-value</th></tr> :
-                        table === 'heritabilityEstimate' ? <tr><th></th><th>Heritability</th><th>P-value</th></tr> :
+                {table === 'GWAS' ? <tr>
+                  <th>PSC</th>
+                  <th>Chromosome</th>
+                  <th>Position</th>
+                  <th>ID</th>
+                  <th>Ref</th>
+                  <th>Alt</th>
+                  <th>A1</th>
+                  <th>Test</th>
+                  <th>OBS_CT</th>
+                  <th>Beta</th>
+                  <th>SE</th>
+                  <th>T Stat</th>
+                  <th>P-value</th>
+                </tr> :
+                  table === 'IWAS' ?
+                    <tr>
+                      <th>PSC</th>
+                      <th>Trait</th>
+                      <th>P-value</th>
+                      <th>ES</th>
+                    </tr> :
+                    table === 'geneticCorrelation' ?
+                      <tr>
+                        <th>PSC</th>
+                        <th>Trait</th>
+                        <th>Mean</th>
+                        <th>Std. Dev.</th>
+                        <th>Z stat</th>
+                        <th>P-value</th>
+                      </tr> :
+                      table === 'geneAnalysis' ?
+                        <tr>
+                          <th>PSC</th>
+                          <th>Gene</th>
+                          <th>Chromosome</th>
+                          <th>Start - Stop</th>
+                          <th>NSNPS</th>
+                          <th>NPARAM</th>
+                          <th>N</th>
+                          <th>Z Stat</th>
+                          <th>P-value</th>
+                        </tr> :
+                        table === 'heritabilityEstimate' ?
+                          <tr>
+                            <th>PSC</th>
+                            <th>Heritability</th>
+                            <th>P-value</th>
+                          </tr> :
                           <div>Error: unknown table {table}</div>}
               </thead>
               <tbody>
