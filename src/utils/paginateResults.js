@@ -2,7 +2,7 @@ const paginateResults = (results, perPage) => {
     const paginatedResults = {
         // double arrays for pagination
         'GWAS': [[]],
-        'IWAS': [[]],
+        'PWAS': [[]],
         'MUSE': [[]],
         'geneticCorrelation': [[]],
         'geneAnalysis': [[]],

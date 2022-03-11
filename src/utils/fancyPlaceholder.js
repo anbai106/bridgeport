@@ -6,7 +6,7 @@ const fancyPlaceholder = searchBy => {
             return 'Search for a SNP e.g. rs123456789';
         case 'MUSE':
             return 'Search for a ROI e.g. Right Hippocampus';
-        case 'IWAS':
+        case 'PWAS':
             return 'Search for a clinical trait e.g. AD';
         case 'geneAnalysis':
             return 'Search for a gene symbol e.g. RUNX2';

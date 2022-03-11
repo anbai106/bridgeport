@@ -38,9 +38,9 @@ function App() {
   } else if (params.SNP !== undefined) {
     initialSearchBy = "SNP"
     initialSearchQuery = params.SNP
-  } else if (params.IWAS !== undefined) {
-    initialSearchBy = "IWAS"
-    initialSearchQuery = params.IWAS
+  } else if (params.PWAS !== undefined) {
+    initialSearchBy = "PWAS"
+    initialSearchQuery = params.PWAS
   } else if (params.geneAnalysis !== undefined) {
     initialSearchBy = "geneAnalysis"
     initialSearchQuery = params.geneAnalysis
@@ -66,7 +66,7 @@ function App() {
   const [searchResults, setSearchResults] = useState({ // results of the search
     // double arrays for pagination
     'GWAS': [[]],
-    'IWAS': [[]],
+    'PWAS': [[]],
     'geneticCorrelation': [[]],
     'geneAnalysis': [[]],
     'heritabilityEstimate': [[]],
@@ -76,13 +76,13 @@ function App() {
   const [chartType, setChartType] = useState('manhattan'); // or 'qq'
   const [pagination, setPagination] = useState({ // pagination for the data table
     GWAS: 0,
-    IWAS: 0,
+    PWAS: 0,
     geneticCorrelation: 0,
     geneAnalysis: 0,
     heritabilityEstimate: 0,
   });
   const [GWAS, setGWAS] = useState([]);
-  const [IWAS, setIWAS] = useState([]);
+  const [PWAS, setPWAS] = useState([]);
   const [MUSE, setMUSE] = useState([]);
   const [heritabilityEstimate, setHeritabilityEstimate] = useState([]);
   const [geneticCorrelation, setGeneticCorrelation] = useState([]);
@@ -132,7 +132,7 @@ function App() {
    */
   const submitSearch = (q = null, suggestionsOnly = false) => {
     // don't actually start searching until all data loaded
-    if (GWAS.length === 0 || IWAS.length === 0 || MUSE.length === 0 || heritabilityEstimate.length === 0 || geneAnalysis.length === 0 || geneticCorrelation.length === 0) {
+    if (GWAS.length === 0 || PWAS.length === 0 || MUSE.length === 0 || heritabilityEstimate.length === 0 || geneAnalysis.length === 0 || geneticCorrelation.length === 0) {
       return;
     }
     if (q === null) {
@@ -390,13 +390,13 @@ function App() {
 
     const matches = {
       'GWAS': [[]],
-      'IWAS': [[]],
+      'PWAS': [[]],
       'geneticCorrelation': [[]],
       'geneAnalysis': [[]],
       'heritabilityEstimate': [[]],
     };
     if (searchBy === 'MuSIC' || (q.toUpperCase().startsWith('C') && searchBy === '')) {
-      // need to search everything (gene analysis, heritability estimates, genetic correlation, GWAS and IWAS)
+      // need to search everything (gene analysis, heritability estimates, genetic correlation, GWAS and PWAS)
       matches['GWAS'] = matchSorter(GWAS, q, {
         keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
         sorter: rankedItems => {
@@ -405,7 +405,7 @@ function App() {
           });
         }
       });
-      matches['IWAS'] = matchSorter(IWAS, q, {
+      matches['PWAS'] = matchSorter(PWAS, q, {
         keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'IDP' }],
         sorter: rankedItems => {
           return rankedItems.sort((a, b) => {
@@ -477,10 +477,10 @@ function App() {
         }
       });
       setSearchSuggestions(matches['GWAS'].map(item => item.ID).filter((value, index, self) => self.indexOf(value) === index));
-    } else if (searchBy === 'IWAS' || (searchBy === '' && includesAndStartsWith(q, [...new Set(IWAS.map(d => d.trait))]))) {
-      // only need to search IWAS
+    } else if (searchBy === 'PWAS' || (searchBy === '' && includesAndStartsWith(q, [...new Set(PWAS.map(d => d.trait))]))) {
+      // only need to search PWAS
       setAtlas(0);
-      matches['IWAS'] = matchSorter(IWAS, q, {
+      matches['PWAS'] = matchSorter(PWAS, q, {
         keys: [{ threshold: matchSorter.rankings.EQUAL, key: 'trait' }],
         sorter: rankedItems => {
           return rankedItems.sort((a, b) => {
@@ -488,8 +488,8 @@ function App() {
           })
         }
       });
-      // IWAS suggestions should be fuzzy (results are exact match)
-      const iwasSuggestions = matchSorter(IWAS, q, {
+      // PWAS suggestions should be fuzzy (results are exact match)
+      const iwasSuggestions = matchSorter(PWAS, q, {
         keys: [{ threshold: matchSorter.rankings.MATCHES, key: 'trait' }]
       }).map(item => item.trait).filter((value, index, self) => self.indexOf(value) === index)
       setSearchSuggestions(iwasSuggestions);
@@ -524,7 +524,7 @@ function App() {
     if (!suggestionsOnly) {
       setPagination({
         GWAS: 0,
-        IWAS: 0,
+        PWAS: 0,
         geneticCorrelation: 0,
         geneAnalysis: 0,
         heritabilityEstimate: 0,
@@ -538,7 +538,7 @@ function App() {
 
   // search when search query changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(submitSearch, [searchQuery, GWAS, IWAS, MUSE, geneAnalysis, heritabilityEstimate, geneticCorrelation]);
+  useEffect(submitSearch, [searchQuery, GWAS, PWAS, MUSE, geneAnalysis, heritabilityEstimate, geneticCorrelation]);
   // only set suggestions when searchBy changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => submitSearch(null, true), [searchBy]);
@@ -546,7 +546,7 @@ function App() {
   // load data
   useEffect(() => {
     axios.get("data/json/GWAS.json").then(res => setGWAS(res.data));
-    axios.get("data/json/IWAS.json").then(res => setIWAS(res.data));
+    axios.get("data/json/IWAS.json").then(res => setPWAS(res.data));
     axios.get("data/json/MUSE.json").then(res => setMUSE(res.data));
     axios.get("data/json/heritability_estimate.json").then(res => setHeritabilityEstimate(res.data));
     axios.get("data/json/gene_analysis.json").then(res => setGeneAnalysis(res.data));
@@ -581,10 +581,10 @@ function App() {
       setSearchBy('SNP')
       setSearched(true)
       setSearchQuery(params.SNP)
-    } else if (params.IWAS !== undefined) {
-      setSearchBy('IWAS')
+    } else if (params.PWAS !== undefined) {
+      setSearchBy('PWAS')
       setSearched(true)
-      setSearchQuery(params.IWAS)
+      setSearchQuery(params.PWAS)
     } else if (params.geneAnalysis !== undefined) {
       setSearchBy('geneAnalysis')
       setSearched(true)
@@ -597,7 +597,7 @@ function App() {
   }, [params]);
 
 
-  if (GWAS.length === 0 || IWAS.length === 0 || MUSE.length === 0 || heritabilityEstimate.length === 0 || geneAnalysis.length === 0 || geneticCorrelation.length === 0) {
+  if (GWAS.length === 0 || PWAS.length === 0 || MUSE.length === 0 || heritabilityEstimate.length === 0 || geneAnalysis.length === 0 || geneticCorrelation.length === 0) {
     return (<Loader />);
   }
 
@@ -667,7 +667,7 @@ function App() {
                 <option selected={searchBy === 'MuSIC'} value="MuSIC">MuSIC</option>
                 <option selected={searchBy === 'SNP'} value="SNP">SNP</option>
                 <option selected={searchBy === 'geneAnalysis'} value="geneAnalysis">Gene symbol</option>
-                <option selected={searchBy === 'IWAS'} value="IWAS">Clinical traits</option>
+                <option selected={searchBy === 'PWAS'} value="PWAS">Clinical traits</option>
                 <option selected={searchBy === 'MUSE'} value="MUSE">MUSE</option>
               </select>
 
@@ -727,7 +727,7 @@ function App() {
 
         {Object.keys(pagination).map(table => (
           // since col-span-6 and col-span-12 classes are set via concatenation, purgeCSS won't see it so those classes have to be set in safelist
-          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 && searchBy !== "MUSE" && !isPartialMuSIC ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['IWAS'][0] !== undefined && searchResults['IWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 && searchBy !== "MUSE" && !isPartialMuSIC ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['PWAS'][0] !== undefined && searchResults['PWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
             <h4 className="font-bold text-xl inline">{table === 'geneAnalysis' ? 'Gene analysis' : table === 'heritabilityEstimate' ? 'Heritability estimate' : table === 'geneticCorrelation' ? 'Genetic correlation' : table}</h4>
             <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>
             <div className="inline btn-group float-right">
@@ -736,16 +736,16 @@ function App() {
                   case 'GWAS':
                     setPagination({
                       GWAS: pagination.GWAS - 1,
-                      IWAS: pagination.IWAS,
+                      PWAS: pagination.PWAS,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
                     });
                     break;
-                  case 'IWAS':
+                  case 'PWAS':
                     setPagination({
                       GWAS: pagination.GWAS,
-                      IWAS: pagination.IWAS - 1,
+                      PWAS: pagination.PWAS - 1,
 
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
@@ -755,7 +755,7 @@ function App() {
                   case 'geneticCorrelation':
                     setPagination({
                       GWAS: pagination.GWAS,
-                      IWAS: pagination.IWAS,
+                      PWAS: pagination.PWAS,
                       geneticCorrelation: pagination.geneticCorrelation - 1,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -764,7 +764,7 @@ function App() {
                   case 'geneAnalysis':
                     setPagination({
                       GWAS: pagination.GWAS,
-                      IWAS: pagination.IWAS,
+                      PWAS: pagination.PWAS,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis - 1,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -773,7 +773,7 @@ function App() {
                   case 'heritabilityEstimate':
                     setPagination({
                       GWAS: pagination.GWAS,
-                      IWAS: pagination.IWAS,
+                      PWAS: pagination.PWAS,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate - 1,
@@ -791,16 +791,16 @@ function App() {
                       setPagination({
                         // offset + current_page then subtract min(current_page, 2) to show prev pages
                         GWAS: x + pagination.GWAS - Math.min(pagination.GWAS, 2),
-                        IWAS: pagination.IWAS,
+                        PWAS: pagination.PWAS,
                         geneticCorrelation: pagination.geneticCorrelation,
                         geneAnalysis: pagination.geneAnalysis,
                         heritabilityEstimate: pagination.heritabilityEstimate,
                       });
                       break;
-                    case 'IWAS':
+                    case 'PWAS':
                       setPagination({
                         GWAS: pagination.GWAS,
-                        IWAS: x + pagination.IWAS - Math.min(pagination.IWAS, 2),
+                        PWAS: x + pagination.PWAS - Math.min(pagination.PWAS, 2),
                         geneticCorrelation: pagination.geneticCorrelation,
                         geneAnalysis: pagination.geneAnalysis,
                         heritabilityEstimate: pagination.heritabilityEstimate,
@@ -809,7 +809,7 @@ function App() {
                     case 'geneticCorrelation':
                       setPagination({
                         GWAS: pagination.GWAS,
-                        IWAS: pagination.IWAS,
+                        PWAS: pagination.PWAS,
                         geneticCorrelation: x + pagination.geneticCorrelation - Math.min(pagination.geneticCorrelation, 2),
                         geneAnalysis: pagination.geneAnalysis,
                         heritabilityEstimate: pagination.heritabilityEstimate,
@@ -818,7 +818,7 @@ function App() {
                     case 'geneAnalysis':
                       setPagination({
                         GWAS: pagination.GWAS,
-                        IWAS: pagination.IWAS,
+                        PWAS: pagination.PWAS,
                         geneticCorrelation: pagination.geneticCorrelation,
                         geneAnalysis: x + pagination.geneAnalysis - Math.min(pagination.geneAnalysis, 2),
                         heritabilityEstimate: pagination.heritabilityEstimate,
@@ -827,7 +827,7 @@ function App() {
                     case 'heritabilityEstimate':
                       setPagination({
                         GWAS: pagination.GWAS,
-                        IWAS: pagination.IWAS,
+                        PWAS: pagination.PWAS,
                         geneticCorrelation: pagination.geneticCorrelation,
                         geneAnalysis: pagination.geneAnalysis,
                         heritabilityEstimate: x + pagination.heritabilityEstimate - Math.min(pagination.heritabilityEstimate, 2),
@@ -844,16 +844,16 @@ function App() {
                   case 'GWAS':
                     setPagination({
                       GWAS: pagination.GWAS + 1,
-                      IWAS: pagination.IWAS,
+                      PWAS: pagination.PWAS,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
                     });
                     break;
-                  case 'IWAS':
+                  case 'PWAS':
                     setPagination({
                       GWAS: pagination.GWAS,
-                      IWAS: pagination.IWAS + 1,
+                      PWAS: pagination.PWAS + 1,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -862,7 +862,7 @@ function App() {
                   case 'geneticCorrelation':
                     setPagination({
                       GWAS: pagination.GWAS,
-                      IWAS: pagination.IWAS,
+                      PWAS: pagination.PWAS,
                       geneticCorrelation: pagination.geneticCorrelation + 1,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -871,7 +871,7 @@ function App() {
                   case 'geneAnalysis':
                     setPagination({
                       GWAS: pagination.GWAS,
-                      IWAS: pagination.IWAS,
+                      PWAS: pagination.PWAS,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis + 1,
                       heritabilityEstimate: pagination.heritabilityEstimate,
@@ -880,7 +880,7 @@ function App() {
                   case 'heritabilityEstimate':
                     setPagination({
                       GWAS: pagination.GWAS,
-                      IWAS: pagination.IWAS,
+                      PWAS: pagination.PWAS,
                       geneticCorrelation: pagination.geneticCorrelation,
                       geneAnalysis: pagination.geneAnalysis,
                       heritabilityEstimate: pagination.heritabilityEstimate + 1,
@@ -909,7 +909,7 @@ function App() {
                   <th>T Stat</th>
                   <th>P-value</th>
                 </tr> :
-                  table === 'IWAS' ?
+                  table === 'PWAS' ?
                     <tr>
                       <th>PSC</th>
                       <th>Trait</th>
@@ -954,7 +954,7 @@ function App() {
                           <td>{x.IDP}</td><td>{x.CHROM}</td><td>{x.POS}</td><td>{x.ID}</td><td>{x.REF}</td><td>{x.ALT}</td><td>{x.A1}</td><td>{x.TEST}</td><td>{x.OBS_CT}</td><td>{x.BETA}</td><td>{x.SE}</td><td>{x.T_STAT}</td><td>{x.P}</td>
                         </tr>
                       );
-                    case 'IWAS':
+                    case 'PWAS':
                       return (
                         <tr key={i} className="hover">
                           <td>{x.IDP}</td><td>{x.trait}</td><td>{x.Pvalue}</td><td>{x.ES}</td>

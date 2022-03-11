@@ -24,8 +24,8 @@ ReactDOM.render(
         <Route path="/MUSE" element={<App />}>
           <Route path=":MUSE" element={<App />} />
         </Route>
-        <Route path="/IWAS" element={<App />}>
-          <Route path=":IWAS" element={<App />} />
+        <Route path="/PWAS" element={<App />}>
+          <Route path=":PWAS" element={<App />} />
         </Route>
         <Route path="/geneAnalysis" element={<App />}>
           <Route path=":geneAnalysis" element={<App />} />
