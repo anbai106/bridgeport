@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/bridgeport/static/css/main.6742fdec.css",
+    "main.js": "/bridgeport/static/js/main.c24cdb87.js",
+    "static/js/787.8d769e3a.chunk.js": "/bridgeport/static/js/787.8d769e3a.chunk.js",
+    "index.html": "/bridgeport/index.html",
+    "main.6742fdec.css.map": "/bridgeport/static/css/main.6742fdec.css.map",
+    "main.c24cdb87.js.map": "/bridgeport/static/js/main.c24cdb87.js.map",
+    "787.8d769e3a.chunk.js.map": "/bridgeport/static/js/787.8d769e3a.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.6742fdec.css",
+    "static/js/main.c24cdb87.js"
+  ]
+}
