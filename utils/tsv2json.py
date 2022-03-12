@@ -12,8 +12,12 @@ def read_csv(csv_file, full_names = None):
             line = line.strip().split('\t')
             row = {}
             for i, col in enumerate(line):
+                if col in ['ADNI_EF', 'ADNI_MEM', 'ADNI_LAN', 'ADNI_VS']:
+                    row = "SKIP_THIS"
+                    break
                 row[header[i]] = full_names[col] if header[i] == 'trait' and full_names  is not None and col in full_names else col
-            data.append(row)
+            if row != "SKIP_THIS":
+                data.append(row)
     return data
 
 def write_json(json_file, data):
