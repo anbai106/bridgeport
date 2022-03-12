@@ -243,7 +243,7 @@ function App() {
 
       // https://kitware.github.io/vtk-js/examples/CellPicker.html
       const highlightCell = (e) => {
-        if (renderer !== e.pokedRenderer) {
+        if (renderer !== e.pokedRenderer || renderer !== window.genericRenderer.getRenderer()) {
           return;
         }
 
@@ -445,6 +445,7 @@ function App() {
         return;
       } else if (q.endsWith('_')) { // Cx_
         setSearchSuggestions([...Array(parseInt(q.toUpperCase().replace('C', '').replace('_', ''))).keys()].map(i => `${q.toUpperCase()}${i + 1}`));
+        setAtlas(0);
         return;
       } else { // Cx_y
         const parts = q.toUpperCase().split('_');
@@ -570,9 +571,6 @@ function App() {
       setSearchBy('MuSIC')
       setSearched(!params.MuSIC.endsWith('_'))
       setSearchQuery(params.MuSIC)
-      if (params.MuSIC.endsWith('_')) {
-        setAtlas(0);
-      }
     } else if (params.query !== undefined) {
       setSearchBy('')
       setSearched(true)
