@@ -24,6 +24,15 @@ body,
   }
 }
 
+.height-70 {
+  max-height: 70vh;
+}
+@media (max-width: 640px) {
+  .height-70 {
+    max-height: none;
+  }
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
