@@ -1,8 +1,0 @@
-trait: clinical phenotype to display
-ADHD: Attention-deficit/hyperactivity disorder
-ASD: Autism spectrum disorders
-BIP: Bipolar
-Intel: Intelligence
-MDD: Major depressive disorder
-OCD: Obsessive-compulsive disorder
-SCZ: schizophrenia
