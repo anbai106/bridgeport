@@ -8,7 +8,7 @@ module.exports = {
     extend: {},
   },
   options: {
-    safelist: ['col-span-6', 'col-span-12']
+    safelist: ['col-span-6', 'col-span-12', 'sm:col-span-6', 'sm:col-span-12']
   },
   plugins: [
     require('daisyui'),

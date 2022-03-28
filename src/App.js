@@ -611,7 +611,7 @@ function App() {
         <h4 className="col-span-12 text-base">MuSIC is a multi-scale atlas that parcellates the human brain by structural covariance in MRI data over the lifespan and a wide range of disease populations. BRIDGEPORT allows you to interactively browse the atlas in a 3D view and explore the phenotypic landscape and genetic architecture of the human brain. This web portal aims to foster multidisciplinary crosstalk across neuroimaging, machine learning, and genetic communities.</h4>
         {/* data-value is the number of actors loaded, value is the % */}
         <progress className="hidden" style={{ marginBottom: '70vh' }} data-value="0" value="0" min="0" max="100" ref={progressRef}></progress>
-        <div className={atlas > 0 && !isPartialMuSIC && searchQuery.toUpperCase()[0] === 'C' && searchBy === 'MuSIC' ? "col-span-8 z-10 relative" : "hidden"}>
+        <div className={atlas > 0 && !isPartialMuSIC && searchQuery.toUpperCase()[0] === 'C' && searchBy === 'MuSIC' ? "col-span-12 sm:col-span-8 z-10 relative" : "hidden"}>
           <div className="tabs">
             <button onClick={() => setChartType('manhattan')} className={chartType === 'manhattan' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>Manhattan</button>
             <button onClick={() => setChartType('qq')} className={chartType === 'qq' ? "tab tab-bordered tab-active" : "tab tab-bordered"}>QQ</button>
@@ -619,7 +619,7 @@ function App() {
           <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(!isPartialMuSIC && chartType === 'manhattan' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' w-full absolute'} src={`data/plot/C${atlas}/${searchQuery.toUpperCase()}_manhattan_plot.png`} alt={searchQuery} />
           <img onAnimationEnd={e => e.animationName === 'bounceOutLeft' ? e.target.classList.add('hidden') : e.target.classList.remove('hidden')} className={(!isPartialMuSIC && chartType === 'qq' ? 'animate__animated animate__bounceInLeft' : 'animate__animated animate__bounceOutLeft') + ' max-w-xl max-h-full absolute'} src={`data/plot/C${atlas}/${searchQuery.toUpperCase()}_QQ_plot.png`} alt={searchQuery} style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }} />
         </div>
-        <div className={atlas > 0 ? (isPartialMuSIC || searchQuery.toUpperCase()[0] !== 'C' || searchBy === 'MUSE' ? "col-span-12 -z-50 w-100 overflow-hidden" : "col-span-4") : "hidden"} style={{ maxHeight: '70vh' }}>
+        <div className={atlas > 0 ? (isPartialMuSIC || searchQuery.toUpperCase()[0] !== 'C' || searchBy === 'MUSE' ? "col-span-12 -z-50 w-100 overflow-hidden height-70" : "col-span-12 mt-10 sm:mt-0 sm:col-span-4 height-70") : "hidden"}>
           <div style={isPartialMuSIC || searchQuery.toUpperCase()[0] !== 'C' ? { bottom: 'calc(30vw - 100px)' } : {}} className="-z-40 h-full relative">
             <div className={atlas > 0 && (isPartialMuSIC || searchBy === 'MUSE' || searchQuery.toUpperCase()[0] !== 'C') ? "-z-30 animate__animated animate__bounceInDown" : "max-w-lg -z-30 animate__animated animate__bounceInLeft"} ref={vtkContainerRef} />
           </div>
@@ -725,7 +725,7 @@ function App() {
 
         {Object.keys(pagination).map(table => (
           // since col-span-6 and col-span-12 classes are set via concatenation, purgeCSS won't see it so those classes have to be set in safelist
-          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 && searchBy !== "MUSE" && !isPartialMuSIC ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['PWAS'][0] !== undefined && searchResults['PWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
+          <div className={searched && searchResults[table][0] !== undefined && searchResults[table][0].length > 0 && searchBy !== "MUSE" && !isPartialMuSIC ? "overflow-x-auto overflow-y-hidden max-h-96 col-span-12 sm:col-span-" + (((searchResults['GWAS'][0] !== undefined && searchResults['GWAS'][0].length > 0) + (searchResults['PWAS'][0] !== undefined && searchResults['PWAS'][0].length > 0) + (searchResults['geneAnalysis'][0] !== undefined && searchResults['geneAnalysis'][0].length > 0) + (searchResults['geneticCorrelation'][0] !== undefined && searchResults['geneticCorrelation'][0].length > 0)) > 2 ? '6' : '12') : "hidden"}>
             <h4 className="font-bold text-xl inline">{table === 'geneAnalysis' ? 'Gene analysis' : table === 'heritabilityEstimate' ? 'Heritability estimate' : table === 'geneticCorrelation' ? 'Genetic correlation' : table}</h4>
             <div className="badge badge-primary badge-sm ml-2 relative bottom-1">{searchResults[table].flat(Infinity).length} results</div>
             <div className="inline btn-group float-right">
