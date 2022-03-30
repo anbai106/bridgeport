@@ -1,34 +1,16 @@
-# BRIDGEPORT
+<h1 align="center">
+  <a href="https://github.com/anbai106/bridgeport">
+    <img src="./data/logo/logo.png" alt="bridgeport Logo">
+  </a>
+  <br/>
+  BRIDGEPORT
+</h1>
 
-Browse IWAS, GWAS, and gene-level associations for imaging, cognitive, pathological and clinical traits.
+<p align="center"><strong>Bridge knowledge from neuroimaging, genetics and clinical phenotypes</strong></p>
 
-## Yarn Scripts
+<p align="center">
+  <a href="https://www.cbica.upenn.edu/bridgeport/">Web portal</a>
+</p>
 
-In the project directory, you can run:
-
-### `yarn install`
-
-Installs JS dependancies needed to run app.
-
-### `yarn start`
-
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
-
-### `yarn test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `yarn build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## `BRIDGEPORT`
+BRIDGEPORT is a publicly accessible web portal that provides massive analytic resources. MuSIC is a multi-scale atlas that parcellates the human brain by structural covariance in MRI data over the lifespan and a wide range of disease populations. BRIDGEPORT allows you to interactively browse the atlas in a 3D view and explore the phenotypic landscape and genetic architecture of the human brain. This web portal aims to foster multidisciplinary crosstalk across neuroimaging, machine learning, and genetic communities.
