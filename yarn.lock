@@ -1396,10 +1396,10 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@kitware/vtk.js@^22.5.1":
-  version "22.6.1"
-  resolved "https://registry.yarnpkg.com/@kitware/vtk.js/-/vtk.js-22.6.1.tgz#7027d20bd3663b3ce1dbd11527b14658b67a5b79"
-  integrity sha512-vh2rJilaQszwpAK+lLpZIWTlcU4w0rifl0N7j6zl0Pn75rDDKbvfRJCGWVx/6fg8IyiIlaGfMOjFR9wzHH9RJQ==
+"@kitware/vtk.js@^24.0.3":
+  version "24.0.3"
+  resolved "https://registry.yarnpkg.com/@kitware/vtk.js/-/vtk.js-24.0.3.tgz#5b3bdf24ab3577b86a6ba596d4f9a8d713f88e07"
+  integrity sha512-40sFeLCllJqiWC13PKZ7ldQSA061Kdct5vqaQXoiCJq2OlORoIFewdNUkeMM436OtPRsPVbyTz3Cisr9azV4mw==
   dependencies:
     "@babel/runtime" "7.16.7"
     commander "8.3.0"
