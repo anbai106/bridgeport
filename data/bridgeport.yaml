@@ -1,0 +1,23 @@
+Name: BRIDGEPORT
+Description: BRIDGEPORT is a publicly accessible web portal that provides massive analytic resources and aims to foster crosstalk for brain imaging genomics.BRIDGEPORT allows you to interactively browse the atlas in a 3D view and explore the phenotypic landscape and genetic architecture of the human brain. You can also download the MUSIC atlas and GWAS summary statistics for your downstream analyses.
+Documentation: https://www.cbica.upenn.edu/bridgeport/
+Contact: junhao.wen89@gmail.com
+ManagedBy: The Center for Biomedical Image Computing & Analytics at University of Pennsylvania
+UpdateFrequency: First of each quarter
+Tags:
+  - imaging-genomics
+  - AI
+  - statistics
+  - life sciences
+License: "TODO"
+Resources:
+  - Description: Sharing GWAS summary statistics to the community for research use in studies conducted at the CBICA center, led by Dr Junhao Wen. 
+    ARN: TODO
+    Region: us-west-2
+    Type: S3 Bucket
+DataAtWork:
+  Publications:
+    - Title: Novel genomic loci and pathways influence patterns of structural covariance in the human brain
+      URL: https://www.medrxiv.org/content/10.1101/2022.07.20.22277727v1
+      AuthorName: Junhao Wen
+      AuthorURL: https://www.junhaowen.com/
