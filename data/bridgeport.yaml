@@ -1,7 +1,7 @@
 Name: BRIDGEPORT
-Description: BRIDGEPORT is a publicly accessible web portal that provides massive analytic resources and aims to foster crosstalk for brain imaging genomics.BRIDGEPORT allows you to interactively browse the atlas in a 3D view and explore the phenotypic landscape and genetic architecture of the human brain. You can also download the MUSIC atlas and GWAS summary statistics for your downstream analyses.
+Description: BRIDGEPORT is a publicly accessible web portal that provides massive analytic resources and aims to foster crosstalk for brain imaging genomics. BRIDGEPORT allows you to interactively browse the atlas in a 3D view and explore the phenotypic landscape and genetic architecture of the human brain. You can also download the MUSIC atlas and GWAS summary statistics for your downstream analyses. The GWAS summary statistics include P-value, effect size (e.g., beta, odds ratio, etc), allele information, rsID, etc. For the MuSIC atlas, users can download the NIFTI images for their own usage. 
 Documentation: https://www.cbica.upenn.edu/bridgeport/
-Contact: junhao.wen89@gmail.com
+Contact: junhao.wen89@gmail.com; software@cbica.upenn.edu
 ManagedBy: The Center for Biomedical Image Computing & Analytics at University of Pennsylvania
 UpdateFrequency: First of each quarter
 Tags:
@@ -9,11 +9,11 @@ Tags:
   - AI
   - statistics
   - life sciences
-License: "TODO"
+License: External data users may freely download, analyze, and publish results based on any BRIDGEPORT data provided here without restrictions
 Resources:
-  - Description: Sharing GWAS summary statistics to the community for research use in studies conducted at the CBICA center, led by Dr Junhao Wen. 
-    ARN: TODO
-    Region: us-west-2
+  - Description: Sharing GWAS summary statistics to the community for research use in studies conducted at the CBICA center, led by Dr Junhao Wen.
+    ARN: arn:aws:s3:::aws-cbica-bridgeport-gwas
+    Region: us-east-1
     Type: S3 Bucket
 DataAtWork:
   Publications:
