@@ -46,18 +46,18 @@ const NavBar = () => {
                             <li className="px-4">
                                 <a href="https://pypi.org/project/sopnmf/" className="w-full">sopNMF</a>
                             </li>
-                            <li className="px-4">
+                            {/* <li className="px-4">
                                 <a href="data/pdf/BIGS_genetic_protocol.pdf" className="w-full">BIGS genetic protocol</a>
-                            </li>
+                            </li> */}
                             <li className="px-4">
                                 <a href="https://www.med.upenn.edu/sbia/muse.html" className="w-full">MUSE</a>
                             </li>
                             <li className="px-4">
                                 <a href="https://pypi.org/project/mlni/" className="w-full">MLNI</a>
                             </li>
-                            <li className="px-4">
+                            {/* <li className="px-4">
                                 <a href="http://www.clinica.run/" className="w-full">Clinica</a>
-                            </li>
+                            </li> */}
                         </ul>
                     </div>
                 </li>

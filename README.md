@@ -26,8 +26,8 @@ Many computational genomics methods utilize GWAS summary statistics, instead of 
   <li>Gene-based analyses</li>
 </ul>
 
-## `BIGS  protocol`
-To embrase open science, we made our genetic quality check pipeline publicly available at: [BIGS protocal](https://www.cbica.upenn.edu/bridgeport/data/pdf/BIGS_genetic_protocol.pdf)
+<!-- ## `BIGS  protocol`
+To embrase open science, we made our genetic quality check pipeline publicly available at: [BIGS protocal](https://www.cbica.upenn.edu/bridgeport/data/pdf/BIGS_genetic_protocol.pdf) -->
 
 ## `Browse MUSIC PSC`
 Users can browse the results for a specific MUSIC PSC (C128_2):

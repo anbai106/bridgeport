@@ -15,12 +15,12 @@ export default function Contributors() {
                         <div className="flex-row items-center space-x-4 card-body"><div>
                             <div className="avatar">
                                 <div className="rounded-full w-14 h-14 shadow">
-                                    <img src={process.env.PUBLIC_URL + "/data/png/C256/C256_rot-1.png"} alt="" />
+                                    <img src={process.env.PUBLIC_URL + "/data/png/hao.jpg"} alt="" />
                                 </div>
                             </div>
                         </div>
                             <div>
-                                <h2 className="card-title"><a href="https://www.junhaowen.com/#about">Junhao Wen</a></h2>
+                                <h2 className="card-title"><a href="https://www.junhaowen.com/#about">Junhao (Hao) Wen</a></h2>
                                 <p className="text-base-content text-opacity-40">Co-founder and coordinator</p>
                             </div>
                         </div>
@@ -31,13 +31,13 @@ export default function Contributors() {
                         <div className="flex-row items-center space-x-4 card-body"><div>
                             <div className="avatar">
                                 <div className="rounded-full w-14 h-14 shadow">
-                                    <img src={process.env.PUBLIC_URL + "/data/png/C256/C256_rot-1.png"} alt="" />
+                                    <img src={process.env.PUBLIC_URL + "/data/png/tim.jpg"} alt="" />
                                 </div>
                             </div>
                         </div>
                             <div>
                                 <h2 className="card-title"><a href="https://www.cs.oberlin.edu/~trobertf/">Timothy Robert-Fitzgerald</a></h2>
-                                <p className="text-base-content text-opacity-40">Developer and maintainer</p>
+                                <p className="text-base-content text-opacity-40">Developer</p>
                             </div>
                         </div>
                     </div>
@@ -47,7 +47,7 @@ export default function Contributors() {
                         <div className="flex-row items-center space-x-4 card-body"><div>
                             <div className="avatar">
                                 <div className="rounded-full w-14 h-14 shadow">
-                                    <img src={process.env.PUBLIC_URL + "/data/png/C256/C256_rot-1.png"} alt="" />
+                                    <img src={process.env.PUBLIC_URL + "/data/png/mark.png"} alt="" />
                                 </div>
                             </div>
                         </div>
@@ -63,7 +63,7 @@ export default function Contributors() {
                         <div className="flex-row items-center space-x-4 card-body"><div>
                             <div className="avatar">
                                 <div className="rounded-full w-14 h-14 shadow">
-                                    <img src={process.env.PUBLIC_URL + "/data/png/C256/C256_rot-1.png"} alt="" />
+                                    <img src={process.env.PUBLIC_URL + "/data/png/christos.jpg"} alt="" />
                                 </div>
                             </div>
                         </div>
