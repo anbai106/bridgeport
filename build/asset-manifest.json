@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/bridgeport/static/css/main.85eb4405.css",
-    "main.js": "/bridgeport/static/js/main.72e10831.js",
+    "main.css": "/bridgeport/static/css/main.99b7ad55.css",
+    "main.js": "/bridgeport/static/js/main.232d4fbe.js",
     "static/js/787.8d769e3a.chunk.js": "/bridgeport/static/js/787.8d769e3a.chunk.js",
     "index.html": "/bridgeport/index.html",
-    "main.85eb4405.css.map": "/bridgeport/static/css/main.85eb4405.css.map",
-    "main.72e10831.js.map": "/bridgeport/static/js/main.72e10831.js.map",
+    "main.99b7ad55.css.map": "/bridgeport/static/css/main.99b7ad55.css.map",
+    "main.232d4fbe.js.map": "/bridgeport/static/js/main.232d4fbe.js.map",
     "787.8d769e3a.chunk.js.map": "/bridgeport/static/js/787.8d769e3a.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.85eb4405.css",
-    "static/js/main.72e10831.js"
+    "static/css/main.99b7ad55.css",
+    "static/js/main.232d4fbe.js"
   ]
 }
