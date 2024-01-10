@@ -4,6 +4,9 @@
   "private": true,
   "homepage": "/bridgeport",
   "dependencies": {
+    "@aws-sdk/client-lambda": "^3.485.0",
+    "@aws-sdk/client-s3": "^3.485.0",
+    "@aws-sdk/credential-providers": "^3.485.0",
     "@craco/craco": "^6.4.3",
     "@kitware/vtk.js": "^22.5.1",
     "@tailwindcss/postcss7-compat": "npm:@tailwindcss/postcss7-compat@^2.2.17",
