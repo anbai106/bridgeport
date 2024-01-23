@@ -4,8 +4,8 @@ import { fromCognitoIdentityPool } from "@aws-sdk/credential-providers";
 
 
 
-//const bucketName = "aws-cbica-bridgeport-gwas"; // Uncomment this and comment the below line for the actual bucket
-const bucketName = "cbica-bridgeport-dummy-gwas";
+const bucketName = "aws-cbica-bridgeport-gwas"; // Uncomment this and comment the below line for the actual bucket
+//const bucketName = "cbica-bridgeport-dummy-gwas";
 const bucketParams = {
     Bucket: bucketName
 };
@@ -98,12 +98,49 @@ function saveBlobToFile(blob, filename) {
     return a;
   }
 
-const downloadKeyToFile = async (key) => {
+const downloadKeyToFile = async (key, index, setCurrentFileCallback) => {
+    
     const fileData = await getKeyContents(key);
+    setCurrentFileCallback(n => n + 1);
     const blob = new Blob([await fileData.transformToByteArray()]);
     const defaultFileName = key;
     saveBlobToFile(blob, defaultFileName);
     return;
+}
+
+const invokeLambda = async (funcName, payload) => {
+    const client = lambda;
+    const command = new InvokeCommand({
+      FunctionName: funcName,
+      Payload: JSON.stringify(payload),
+      LogType: LogType.Tail,
+    });
+  
+    const { Payload, LogResult } = await client.send(command);
+    return;
+    //const result = Buffer.from(Payload).toString();
+    //const logs = Buffer.from(LogResult, "base64").toString();
+    //return { logs, result };
+  };
+  
+  
+
+export const downloadMusicParcel = async (parcel, email="") => {
+    const url = "/bridgeport/data/MuSIC/" + parcel + ".nii.gz"
+    const fileName = "MuSIC_" + parcel + ".nii.gz"
+    const payload = {downloadType: "MuSIC_" + parcel, email: email}
+    fetch(url, { method: "get", mode: "no-cors", referrerPolicy: "no-referrer" })
+    .then((res) => res.blob())
+    .then((res) => {
+      const aElement = document.createElement("a");
+      aElement.setAttribute("download", fileName);
+      const href = URL.createObjectURL(res);
+      aElement.href = href;
+      aElement.setAttribute("target", "_blank");
+      aElement.click();
+      URL.revokeObjectURL(href);
+    })
+    .then((res) => invokeLambda("cbica-bridgeport-incrementdownloads", payload));
 }
 
 export const downloadPSCByID = async (psc_id) => {
@@ -119,11 +156,12 @@ const downloadKeyToBlob = async (key) => {
     return await getKeyContents(key);
 }
 
-export const downloadSet = async (set) => {
+export const downloadSet = async (set, setTotalFilesCallback, setCurrentFileCallback) => {
     const listing = await listFilesInBucket(set);
+    setTotalFilesCallback(listing.length);
     let promises = [];
-    for (let item of listing) {
-        promises.push(downloadKeyToFile(item.Key));
+    for (let [index, item] of listing.entries()) {
+        promises.push(downloadKeyToFile(item.Key, index, setCurrentFileCallback));
     }
     await Promise.all(promises);
 }
