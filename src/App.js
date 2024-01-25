@@ -15,6 +15,7 @@ import fancyPlaceholder from './utils/fancyPlaceholder';
 import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 import Loader from './components/Loader';
+import { downloadPSCByID } from './utils/downloadData';
 
 
 function App() {
@@ -88,6 +89,7 @@ function App() {
   const [geneticCorrelation, setGeneticCorrelation] = useState([]);
   const [geneAnalysis, setGeneAnalysis] = useState([]);
   const isPartialMuSIC = searchQuery.toUpperCase().startsWith('C') && ['32', '64', '128', '256', '512', '1024'].includes(searchQuery.substring(1));
+  const [isDownloadingPSC, setIsDownloadingPSC] = useState(false);
 
   /**
    * helpers
@@ -625,6 +627,7 @@ function App() {
           </div>
         </div>
         <p className={atlas > 0 && searchBy !== 'MUSE' ? "z-50 text-right col-span-12 text-gray-500" : "hidden"}>Left click to rotate brain; right click to reveal parcellation statistics; scroll to zoom.</p>
+        
         {Object.keys(vtkPreviews).map((c => {
           return (
             <div className={atlas > 0 ? "hidden" : "col-span-12 sm:col-span-2"} ref={vtkPreviews[c]} key={c}>
@@ -636,6 +639,7 @@ function App() {
             </div>
           )
         }))}
+        
         <form className={atlas > 0 && isPartialMuSIC ? "hidden" : "col-span-12"} onSubmit={e => {
           e.preventDefault();
           e.stopPropagation();
@@ -645,7 +649,8 @@ function App() {
           setTypingTimer(null);
           const searchBox = e.target.querySelector('input');
           navigate(`/${searchBy === '' ? 'search' : searchBy}/${searchBox.value}`);
-        }}>
+        }}>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
+          <button className={atlas > 0 && !isPartialMuSIC && searchQuery.toUpperCase()[0] === 'C' && searchBy === 'MuSIC' ? "sm:pl-64 input input-bordered input-primary w-full mb-2 sm:mb-0 btn btn-primary col-span-12 sm:col-span-8 z-10 relative" : "hidden"} onClick={async () => {setIsDownloadingPSC(true); await downloadPSCByID(searchQuery); setIsDownloadingPSC(false);} }>{!isDownloadingPSC? "Click here to download GWAS data for this PSC!" : "Downloading, please wait..."}</button>
           <div className="form-control my-2">
             <div className="relative">
               <button type="button" className={(searched ? "" : "hidden") + " sm:absolute sm:w-28 w-full top-0 left-0 sm:rounded-r-none sm:mb-0 mb-2 btn btn-primary"} onClick={(e) => {
@@ -668,7 +673,6 @@ function App() {
                 <option selected={searchBy === 'PWAS'} value="PWAS">Clinical traits</option>
                 <option selected={searchBy === 'MUSE'} value="MUSE">MUSE</option>
               </select>
-
               <input type="text" defaultValue={searchQuery} placeholder={fancyPlaceholder(searchBy)} className={(searched ? "sm:pl-64" : "sm:pl-40") + " input input-bordered input-primary w-full mb-2 sm:mb-0"} ref={searchBoxRef} onChange={x => {
                 // wait to see if the user has stopped typing
                 if (typingTimer !== null) {

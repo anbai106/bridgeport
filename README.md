@@ -41,12 +41,10 @@ Users can browse the results for a specific MUSIC PSC (C128_2):
 Alternatively, users can also browse the portal by SNP, gene symbols, clinical traits and MUSE ROI.
 
 ## Citing this work
-> Junhao, W.E.N., Abdulkadir, A., Satterthwaite, T.D., Robert-Fitzgerald, T., Chen, J., Schnack, H., Zanetti, M., Meisenzahl, E., Busatto, G., Crespo-Facorro, B. and Pantelis, C., 2022. **Novel genomic loci and pathways influence patterns of structural covariance in the human brain**. medRxiv. - [In review](https://www.medrxiv.org/content/10.1101/2022.07.20.22277727v1)
+> Junhao, Wen., Abdulkadir, A., Satterthwaite, T.D., Robert-Fitzgerald, T., Chen, J., Schnack, H., Zanetti, M., Meisenzahl, E., Busatto, G., Crespo-Facorro, B. and Pantelis, C., 2023. **Genomic loci and pathways influence patterns of structural covariance in the human brain**. PNAS. - [Link](https://www.pnas.org/doi/10.1073/pnas.2300842120)
 
 
 ## Publications around
 > Wen, J., Fu, C.H., Tosun, D., Veturi, Y., Yang, Z., Abdulkadir, A., Mamourian, E., Srinivasan, D., Skampardoni, I., Singh, A. and Nawani, H., 2022. **Characterizing Heterogeneity in Neuroimaging, Cognition, Clinical Symptoms, and Genetics Among Patients With Late-Life Depression**. JAMA psychiatry, 79(5), pp.464-474. - [Link](https://jamanetwork.com/journals/jamapsychiatry/fullarticle/2789902)
 
-> Wen, J., Yang, Z., Nasrallah, I., Cui, Y., Erus, G., Srinivasan, D., Abdulkadir, A., Mamourian, E., Hwang, G., Singh, A. and Bergman, M., 2022. **Genetic underpinnings of early brain change along two deep-learning Alzheimer's dimensions**. bioRxiv. - [Link](https://www.biorxiv.org/content/10.1101/2022.09.16.508329v1)
-
-> Hwang, G., Wen, J., Sotardi, S., Brodkin, E.S., Chand, G.B., Dwyer, D.B., Erus, G., Doshi, J., Singhal, P., Srinivasan, D. and Varol, E., 2022. **Three Imaging Endophenotypes Characterize Neuroanatomical Heterogeneity of Autism Spectrum Disorder**. medRxiv. - [Link](https://www.medrxiv.org/content/10.1101/2022.06.17.22276543v1)
+> Hwang, G., Wen, J. (First co-author), Sotardi, S., Brodkin, E.S., Chand, G.B., Dwyer, D.B., Erus, G., Doshi, J., Singhal, P., Srinivasan, D. and Varol, E., 2023. **Assessment of Neuroanatomical Endophenotypes of Autism Spectrum Disorder and Association With Characteristics of Individuals With Schizophrenia and the General Population**. JAMA psychiatry. - [Link](https://jamanetwork.com/journals/jamapsychiatry/article-abstract/2803140)

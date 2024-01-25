@@ -7,4 +7,8 @@ module.exports = {
             ],
         },
     },
+    experiments: {
+        topLevelAwait: true
+    },
+    watchOptions: { ignored: /node_modules/ }
 }
