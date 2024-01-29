@@ -69,7 +69,7 @@ export default function Contributors() {
                         </div>
                             <div>
                                 <h2 className="card-title"><a href="https://aibil.med.upenn.edu/people/alex-getka/">Alexander Getka</a></h2>
-                                <p className="text-base-content text-opacity-40">Maintainer</p>
+                                <p className="text-base-content text-opacity-40">Developer</p>
                             </div>
                         </div>
                     </div>

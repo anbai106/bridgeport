@@ -24,7 +24,7 @@ yarn-error.log*
 
 # data
 /data/sourcedata
-/data/png
+#/data/png
 # used in contributors page
 !/data/png/C256/C256_rot-1.png
 
