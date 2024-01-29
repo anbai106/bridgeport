@@ -156,13 +156,15 @@ const downloadKeyToBlob = async (key) => {
     return await getKeyContents(key);
 }
 
-export const downloadSet = async (set, setTotalFilesCallback, setCurrentFileCallback) => {
+export const downloadSet = async (set, setTotalFilesCallback, setCurrentFileCallback, email) => {
+    const payload = {downloadType: "GWAS_" + set, email: email}
     const listing = await listFilesInBucket(set);
     setTotalFilesCallback(listing.length);
     let promises = [];
     for (let [index, item] of listing.entries()) {
         promises.push(downloadKeyToFile(item.Key, index, setCurrentFileCallback));
     }
+    invokeLambda("cbica-bridgeport-incrementdownloads", payload)
     await Promise.all(promises);
 }
 
