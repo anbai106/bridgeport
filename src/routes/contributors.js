@@ -63,6 +63,22 @@ export default function Contributors() {
                         <div className="flex-row items-center space-x-4 card-body"><div>
                             <div className="avatar">
                                 <div className="rounded-full w-14 h-14 shadow">
+                                    <img src={process.env.PUBLIC_URL + "/data/png/alex.png"} alt="" />
+                                </div>
+                            </div>
+                        </div>
+                            <div>
+                                <h2 className="card-title"><a href="https://aibil.med.upenn.edu/people/alex-getka/">Alexander Getka</a></h2>
+                                <p className="text-base-content text-opacity-40">Developer</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-span-12 md:col-span-3">
+                    <div className="card shadow-lg compact side bg-base-100">
+                        <div className="flex-row items-center space-x-4 card-body"><div>
+                            <div className="avatar">
+                                <div className="rounded-full w-14 h-14 shadow">
                                     <img src={process.env.PUBLIC_URL + "/data/png/christos.jpg"} alt="" />
                                 </div>
                             </div>

@@ -24,6 +24,14 @@ yarn-error.log*
 
 # data
 /data/sourcedata
-/data/png
+#/data/png
 # used in contributors page
 !/data/png/C256/C256_rot-1.png
+
+# MuSIC nifti
+data/MuSIC/C32/C32.nii.gz
+data/MuSIC/C64/C64.nii.gz
+data/MuSIC/C128/C128.nii.gz
+data/MuSIC/C256/C256.nii.gz
+data/MuSIC/C512/C512.nii.gz
+data/MuSIC/C1024/C1024.nii.gz
