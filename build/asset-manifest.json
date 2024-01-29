@@ -1,5 +1,6 @@
 {
   "files": {
+<<<<<<< HEAD
     "main.css": "/bridgeport/static/css/main.99b7ad55.css",
     "main.js": "/bridgeport/static/js/main.a65b58b6.js",
     "static/js/787.8d769e3a.chunk.js": "/bridgeport/static/js/787.8d769e3a.chunk.js",
@@ -11,5 +12,18 @@
   "entrypoints": [
     "static/css/main.99b7ad55.css",
     "static/js/main.a65b58b6.js"
+=======
+    "main.css": "/bridgeport/static/css/main.c769f65c.css",
+    "main.js": "/bridgeport/static/js/main.b82d0505.js",
+    "static/js/787.5e18c497.chunk.js": "/bridgeport/static/js/787.5e18c497.chunk.js",
+    "index.html": "/bridgeport/index.html",
+    "main.c769f65c.css.map": "/bridgeport/static/css/main.c769f65c.css.map",
+    "main.b82d0505.js.map": "/bridgeport/static/js/main.b82d0505.js.map",
+    "787.5e18c497.chunk.js.map": "/bridgeport/static/js/787.5e18c497.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.c769f65c.css",
+    "static/js/main.b82d0505.js"
+>>>>>>> 747c4ab583fa4774f3466ac9dcda0d116fdb930f
   ]
 }
