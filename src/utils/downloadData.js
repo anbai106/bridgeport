@@ -149,7 +149,8 @@ export const downloadPSCByID = async (psc_id) => {
     const psc = psc_id.split("_")[1];
 
     const key = set + "_" + psc + "_gwas_plink.tsv.zip";
-    await downloadKeyToFile(key);
+    const setCurrentFileCallback = (n) => {return n;}
+    await downloadKeyToFile(key, psc, setCurrentFileCallback);
 } 
 
 const downloadKeyToBlob = async (key) => {
